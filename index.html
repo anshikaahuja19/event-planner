@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Planner | AI-Powered Event Planning Assistant</title>
+    <meta name="description" content="AI-powered event planning tool for seamless budget, timeline, and attendee management.">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon"><i class="fas fa-sun"></i></div>
+                <span>Event Planner</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-view="dashboard">
+                    <i class="fas fa-th-large"></i> <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-view="my-events">
+                    <i class="fas fa-calendar-alt"></i> <span>My Events</span>
+                </a>
+                <a href="#" class="nav-item" data-view="vendors">
+                    <i class="fas fa-store"></i> <span>Vendors</span>
+                </a>
+                <a href="#" class="nav-item" data-view="analytics">
+                    <i class="fas fa-chart-pie"></i> <span>Analytics</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="theme-toggle" class="icon-btn" title="Toggle dark mode">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <div class="user-profile">
+                    <img src="https://ui-avatars.com/api/?name=Event+Planner&background=f59e0b&color=fff" alt="Profile">
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-input" placeholder="Search events or vendors...">
+                </div>
+                <div class="top-actions">
+                    <button id="create-event-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> New Event
+                    </button>
+                    <div class="notifications" id="notif-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge" id="notif-badge">0</span>
+                    </div>
+                </div>
+            </header>
+
+            <div id="view-container">
+                <!-- Dashboard View (Default) -->
+                <section id="dashboard-view" class="view active">
+                    <div class="welcome-header">
+                        <h1 id="greeting-text">Good afternoon, Planner</h1>
+                        <p id="greeting-sub">Let's start planning something amazing today.</p>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon amber"><i class="fas fa-calendar-check"></i></div>
+                            <div class="stat-info">
+                                <span class="label">Active Events</span>
+                                <span class="value" id="count-events">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon honey"><i class="fas fa-users"></i></div>
+                            <div class="stat-info">
+                                <span class="label">Total Attendees</span>
+                                <span class="value" id="count-attendees">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon green"><i class="fas fa-wallet"></i></div>
+                            <div class="stat-info">
+                                <span class="label">Budget Utilized</span>
+                                <span class="value" id="budget-utilization">0%</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon warm"><i class="fas fa-tasks"></i></div>
+                            <div class="stat-info">
+                                <span class="label">Tasks Completed</span>
+                                <span class="value" id="count-tasks">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="events-section">
+                        <div class="section-header">
+                            <h2>Recent Events</h2>
+                            <a href="#" id="view-all-link" class="link text-sm">View All</a>
+                        </div>
+                        <div class="event-grid" id="recent-events-grid">
+                            <div class="empty-state">
+                                <div class="empty-icon"><i class="fas fa-seedling"></i></div>
+                                <h3>No events yet</h3>
+                                <p>Plant the seed — create your first event!</p>
+                                <button class="btn btn-primary" id="empty-create-btn">
+                                    <i class="fas fa-plus"></i> Create Event
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- My Events View -->
+                <section id="my-events-view" class="view">
+                    <div class="section-header" style="margin-bottom:1.5rem;">
+                        <h2>All My Events</h2>
+                        <button class="btn btn-primary btn-sm" id="events-create-btn"><i class="fas fa-plus"></i> New Event</button>
+                    </div>
+                    <div class="event-grid" id="all-events-grid">
+                        <div class="empty-state">
+                            <div class="empty-icon"><i class="fas fa-seedling"></i></div>
+                            <h3>No events yet</h3>
+                            <p>Create your first event to get started.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Vendors View -->
+                <section id="vendors-view" class="view">
+                    <div class="section-header" style="margin-bottom:1.5rem;">
+                        <h2>Vendor Directory</h2>
+                        <div class="vendor-filters" id="global-vendor-filters">
+                            <span class="tag active" data-filter="All">All</span>
+                            <span class="tag" data-filter="Venue">Venue</span>
+                            <span class="tag" data-filter="Catering">Catering</span>
+                            <span class="tag" data-filter="Decor">Decor</span>
+                            <span class="tag" data-filter="Photography">Photography</span>
+                        </div>
+                    </div>
+                    <div class="vendor-grid" id="global-vendor-list"></div>
+                </section>
+
+                <!-- Analytics View -->
+                <section id="analytics-view" class="view">
+                    <h2 style="margin-bottom:1.5rem;">Event Analytics</h2>
+                    <div id="analytics-content">
+                        <div class="empty-state">
+                            <div class="empty-icon"><i class="fas fa-chart-line"></i></div>
+                            <h3>No data yet</h3>
+                            <p>Create events and track expenses to see analytics.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Event Creation Modal -->
+                <div id="create-event-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2><i class="fas fa-sun sunflower-spin"></i> Create New Event</h2>
+                            <button class="close-modal"><i class="fas fa-times"></i></button>
+                        </div>
+                        <form id="event-form" class="multi-step-form">
+                            <!-- Step 1: Basics -->
+                            <div class="form-step active" data-step="1">
+                                <h3>Basic Information</h3>
+                                <div class="form-group">
+                                    <label for="event-title">Event Title</label>
+                                    <input type="text" id="event-title" placeholder="e.g. Summer Corporate Retreat" required>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="event-type">Event Type</label>
+                                        <select id="event-type">
+                                            <option value="wedding">Wedding</option>
+                                            <option value="corporate">Corporate</option>
+                                            <option value="birthday">Birthday</option>
+                                            <option value="conference">Conference</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="event-date">Date</label>
+                                        <input type="date" id="event-date" required>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="event-size">Expected Size</label>
+                                        <input type="number" id="event-size" placeholder="Number of guests" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="event-location">Location</label>
+                                        <input type="text" id="event-location" placeholder="City or Venue" required>
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" class="btn btn-primary next-step">Next Step <i class="fas fa-arrow-right"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Budget -->
+                            <div class="form-step" data-step="2">
+                                <h3>Budget & Preferences</h3>
+                                <div class="form-group">
+                                    <label for="event-budget">Total Budget (INR)</label>
+                                    <div class="input-with-icon">
+                                        <span class="icon">₹</span>
+                                        <input type="number" id="event-budget" placeholder="e.g. 500000" required>
+                                    </div>
+                                </div>
+                                <div class="ai-suggestion-opt">
+                                    <div class="checkbox-wrapper">
+                                        <input type="checkbox" id="ai-auto-generate" checked>
+                                        <label for="ai-auto-generate">Auto-generate AI Task Timeline & Budget Split</label>
+                                    </div>
+                                    <p class="helper-text">Our AI will optimize your schedule and budget based on event size and type.</p>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" class="btn btn-secondary prev-step">Back</button>
+                                    <button type="submit" class="btn btn-success">Generate Event <i class="fas fa-magic"></i></button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Notification Panel -->
+                <div id="notif-panel" class="notif-panel hidden">
+                    <div class="notif-header">
+                        <h3>Notifications</h3>
+                        <button class="btn btn-sm btn-outline" id="clear-notifs">Clear All</button>
+                    </div>
+                    <div id="notif-list" class="notif-list">
+                        <p class="text-muted" style="padding:1rem;text-align:center;">No notifications yet.</p>
+                    </div>
+                </div>
+
+                <!-- Event Detail View -->
+                <section id="event-detail-view" class="view">
+                    <div class="detail-header">
+                        <button class="back-btn" id="detail-back-btn"><i class="fas fa-arrow-left"></i> Back</button>
+                        <h1 id="detail-title">Event Title</h1>
+                        <div class="detail-meta">
+                            <span id="detail-date"><i class="fas fa-calendar"></i> —</span>
+                            <span id="detail-location"><i class="fas fa-map-marker-alt"></i> —</span>
+                            <span id="detail-size"><i class="fas fa-users"></i> —</span>
+                            <span id="detail-budget-label"><i class="fas fa-wallet"></i> —</span>
+                        </div>
+                        <div class="detail-actions">
+                            <button class="btn btn-outline btn-sm" id="delete-event-btn"><i class="fas fa-trash"></i> Delete Event</button>
+                        </div>
+                    </div>
+
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="timeline">Timeline</button>
+                        <button class="tab-btn" data-tab="budget">Budget Split</button>
+                        <button class="tab-btn" data-tab="attendees">Attendees</button>
+                        <button class="tab-btn" data-tab="vendors">Vendor Research</button>
+                    </div>
+
+                    <div class="tab-content" id="timeline-tab">
+                        <div class="ai-header">
+                            <h3><i class="fas fa-magic"></i> AI Task Timeline</h3>
+                            <button class="btn btn-sm btn-outline" id="optimize-timeline-btn">Optimize Timeline</button>
+                        </div>
+                        <div class="timeline-container" id="timeline-list"></div>
+                    </div>
+
+                    <div class="tab-content hidden" id="budget-tab">
+                        <div class="ai-header">
+                            <h3><i class="fas fa-wallet"></i> Budget Allocation</h3>
+                            <div class="budget-total">Total: <span id="budget-total-val">₹0</span></div>
+                        </div>
+                        <div class="budget-grid" id="budget-allocation-list"></div>
+                        <div class="expense-section" style="margin-top:2rem;">
+                            <h3 style="margin-bottom:1rem;">Track Expense</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <select id="expense-category"></select>
+                                </div>
+                                <div class="form-group">
+                                    <input type="number" id="expense-amount" placeholder="Amount spent (₹)">
+                                </div>
+                                <div class="form-group" style="display:flex;align-items:flex-end;">
+                                    <button type="button" class="btn btn-primary btn-sm" id="add-expense-btn"><i class="fas fa-plus"></i> Add</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content hidden" id="attendees-tab">
+                        <div class="attendee-actions">
+                            <button class="btn btn-primary btn-sm" id="add-attendee-btn"><i class="fas fa-user-plus"></i> Add Attendee</button>
+                            <button class="btn btn-outline btn-sm" id="send-invites-btn"><i class="fas fa-paper-plane"></i> Send Invitations</button>
+                            <button class="btn btn-outline btn-sm" id="send-reminders-btn"><i class="fas fa-bell"></i> Send Reminders</button>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Status</th>
+                                    <th>Group</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendee-list"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="event-vendors-tab" class="tab-content hidden">
+                        <div class="vendor-header">
+                            <h3>Curated Vendor Database</h3>
+                            <div class="vendor-filters" id="detail-vendor-filters">
+                                <span class="tag active" data-filter="All">All</span>
+                                <span class="tag" data-filter="Venue">Venue</span>
+                                <span class="tag" data-filter="Catering">Catering</span>
+                                <span class="tag" data-filter="Decor">Decor</span>
+                                <span class="tag" data-filter="Photography">Photography</span>
+                            </div>
+                        </div>
+                        <div class="vendor-grid" id="vendor-list"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- AI Toast Notification -->
+    <div id="ai-toast" class="ai-toast hidden">
+        <div class="ai-sparkle"><i class="fas fa-sun sunflower-spin"></i></div>
+        <div class="ai-text">AI is generating your event timeline...</div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
