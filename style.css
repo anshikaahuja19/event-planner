@@ -83,23 +83,22 @@ body {
 .logo {
     display: flex;
     align-items: center;
-    gap: 12px;
-    font-size: 1.35rem;
-    font-weight: 700;
-    margin-bottom: 3rem;
-    color: var(--primary);
+    justify-content: flex-start;
+    margin-bottom: 2rem;
+    padding-left: 0.5rem;
 }
 
-.logo-icon {
-    width: 42px;
-    height: 42px;
-    background: linear-gradient(135deg, var(--honey), var(--primary));
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1.1rem;
+.logo img {
+    height: 70px;
+    width: auto;
+    object-fit: contain;
+    margin-right: 10px;
+    border-radius: 50%;
+}
+.logo-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
 }
 
 .nav-menu {
