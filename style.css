@@ -1259,6 +1259,24 @@ body {
     background: linear-gradient(to bottom right, var(--bg-card), var(--primary-light)) !important;
 }
 
+.progress-fill.near-budget {
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+.progress-fill.over-budget {
+    background: linear-gradient(90deg, #ef4444, #b91c1c);
+}
+.budget-alert {
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 6px;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+.budget-alert.over  { background: #fee2e2; color: #991b1b; }
+.budget-alert.warn  { background: #fef3c7; color: #92400e; }
+.budget-card.warn { border-color: var(--honey); }
+.budget-card.over { border-color: var(--danger); }
+
 /* RSVP Summary */
 .rsvp-pill {
     padding: 6px 12px;

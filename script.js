@@ -260,6 +260,16 @@ document.addEventListener('DOMContentLoaded', () => {
             $('#greeting-sub').innerText = "Let's start planning something amazing today.";
         }
 
+        const hasOverspend = state.events.some(ev =>
+            Object.entries(ev.budgetSplit || {}).some(([cat, alloc]) =>
+                (ev.expenses?.[cat] || 0) > alloc
+            )
+        );
+        const overspendMsg = '⚠ Budget alert: one or more categories are overspent.';
+        if (hasOverspend && !state.notifications.some(n => n.text === overspendMsg)) {
+            addNotif(overspendMsg);
+        }
+
         renderEventGrid($('#recent-events-grid'), state.events.slice(0, 6));
     };
 
@@ -570,19 +580,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const expenses = event.expenses || {};
 
+        const totalBudget = parseInt(event.budget) || 0;
+        let totalSpent = 0;
+        if (event.expenses) {
+            Object.values(event.expenses).forEach(v => totalSpent += v);
+        }
+        const totalPct = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+        const totalOver = totalSpent > totalBudget;
+
+        const headerEl = $('.budget-total');
+        if (headerEl) {
+            headerEl.innerHTML = totalOver
+                ? `<span style="color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Total Spent: ₹${totalSpent.toLocaleString()} / ₹${totalBudget.toLocaleString()} Budget (${totalPct}% used)</span>`
+                : `Total Spent: ₹${totalSpent.toLocaleString()} / ₹${totalBudget.toLocaleString()} Budget (${totalPct}% used)`;
+        }
+
         budgetList.innerHTML = entries.map(([category, allocated]) => {
             const spent = expenses[category] || 0;
-            const pct = allocated > 0 ? Math.min(Math.round((spent / allocated) * 100), 100) : 0;
+            const pct = allocated > 0 ? Math.round((spent / allocated) * 100) : 0;
+            const isOver    = pct >= 100;
+            const isWarning = pct >= 80 && pct < 100;
+            const overAmt   = spent - allocated;
+
+            let borderClass = '';
+            if (isOver) borderClass = 'over';
+            else if (isWarning) borderClass = 'warn';
+
             return `
-            <div class="budget-card">
+            <div class="budget-card ${borderClass}">
                 <div class="budget-card-header">
                     <div class="category-icon"><i class="fas ${getCategoryIcon(category)}"></i></div>
                     <span class="category-name">${category.charAt(0).toUpperCase() + category.slice(1)}</span>
                     <span class="amount">₹${allocated.toLocaleString()}</span>
                 </div>
                 <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${pct}%"></div>
+                    <div class="progress-fill ${isOver ? 'over-budget' : isWarning ? 'near-budget' : ''}" style="width: ${Math.min(pct, 100)}%"></div>
                 </div>
+                ${isOver ? `<div class="budget-alert over">⚠ Overspent by ₹${overAmt.toLocaleString()}</div>` : ''}
+                ${isWarning ? `<div class="budget-alert warn">⚡ ${pct}% used — approaching limit</div>` : ''}
                 <div class="budget-meta">
                     <span>Spent: ₹${spent.toLocaleString()}</span>
                     <span>${pct}% used</span>
@@ -647,6 +682,7 @@ document.addEventListener('DOMContentLoaded', () => {
             $('#rsvp-progress-declined').style.width = `${pctDecl}%`;
             $('#rsvp-progress-label').innerText = `${respondedPct}% responded`;
         }
+
         tbody.innerHTML = event.attendees.map((a, idx) => `
             <tr>
                 <td>${a.name}</td>
@@ -923,6 +959,27 @@ document.addEventListener('DOMContentLoaded', () => {
                         }).join('')}
                     </div>
                 </div>
+            </div>`;
+
+        // Render overspent categories summary
+        const overspentList = Object.entries(catTotals).filter(([cat, allocated]) => (catSpent[cat] || 0) > allocated);
+        const overspentHtml = overspentList.length > 0 
+            ? overspentList.map(([cat, allocated]) => {
+                const spent = catSpent[cat] || 0;
+                const over = spent - allocated;
+                return `
+                <div class="bar-row" style="margin-bottom: 0.5rem; justify-content: space-between; display: flex; align-items: center;">
+                    <span class="bar-label" style="flex: 1;">${cat.charAt(0).toUpperCase() + cat.slice(1)}</span>
+                    <span class="text-sm text-muted" style="flex: 1.5; text-align: center;">Allocated: ₹${allocated.toLocaleString()} &nbsp;|&nbsp; Spent: ₹${spent.toLocaleString()}</span>
+                    <span style="color: var(--danger); font-weight: 600; flex: 1; text-align: right;">⚠ Over by ₹${over.toLocaleString()}</span>
+                </div>`;
+              }).join('')
+            : '<div style="color: var(--success); font-weight: 600; text-align: center; padding: 1rem;">✅ All categories within budget</div>';
+
+        container.innerHTML += `
+            <div class="analytics-card" style="margin-top: 1.5rem;">
+                <h4 style="margin-bottom: 1rem;">Overspent Categories</h4>
+                ${overspentHtml}
             </div>`;
     };
 
