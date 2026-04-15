@@ -616,9 +616,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================
     const renderAttendees = (event) => {
         const tbody = $('#attendee-list');
+        const rsvpDashboard = $('#rsvp-dashboard');
+        
         if (!event.attendees || event.attendees.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;">No attendees added yet.</td></tr>`;
+            if (rsvpDashboard) rsvpDashboard.style.display = 'none';
             return;
+        }
+
+        const total = event.attendees.length;
+        const confirmed = event.attendees.filter(a => a.status === 'Confirmed').length;
+        const declined  = event.attendees.filter(a => a.status === 'Declined').length;
+        const invited   = event.attendees.filter(a => a.status === 'Invited').length;
+        const pending   = event.attendees.filter(a => a.status === 'Pending').length;
+        const awaiting  = invited + pending;
+
+        if (rsvpDashboard) {
+            rsvpDashboard.style.display = 'block';
+            $('#rsvp-summary').innerHTML = `
+                <div class="rsvp-pill rsvp-confirmed">✅ Confirmed: ${confirmed}</div>
+                <div class="rsvp-pill rsvp-declined">✗ Declined: ${declined}</div>
+                <div class="rsvp-pill rsvp-awaiting">⏳ Awaiting: ${awaiting}</div>
+            `;
+            
+            const pctConf = total > 0 ? (confirmed / total) * 100 : 0;
+            const pctDecl = total > 0 ? (declined / total) * 100 : 0;
+            const respondedPct = total > 0 ? Math.round(((confirmed + declined) / total) * 100) : 0;
+            
+            $('#rsvp-progress-confirmed').style.width = `${pctConf}%`;
+            $('#rsvp-progress-declined').style.width = `${pctDecl}%`;
+            $('#rsvp-progress-label').innerText = `${respondedPct}% responded`;
         }
         tbody.innerHTML = event.attendees.map((a, idx) => `
             <tr>
@@ -626,9 +653,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${a.email}</td>
                 <td><span class="status-tag ${a.status.toLowerCase()}">${a.status}</span></td>
                 <td>${a.group || 'General'}</td>
-                <td><button class="delete-attendee-btn" data-idx="${idx}" title="Remove"><i class="fas fa-trash"></i></button></td>
+                <td style="display:flex;gap:6px;align-items:center;">
+                    ${a.status !== 'Confirmed' ? `<button class="btn btn-sm btn-success confirm-btn" data-idx="${idx}">✓ Confirm</button>` : ''}
+                    ${a.status !== 'Declined'  ? `<button class="btn btn-sm btn-danger decline-btn" data-idx="${idx}">✗ Decline</button>` : ''}
+                    <button class="delete-attendee-btn" data-idx="${idx}"><i class="fas fa-trash"></i></button>
+                </td>
             </tr>
         `).join('');
+
+        // Action listeners
+        tbody.querySelectorAll('.confirm-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                event.attendees[parseInt(btn.dataset.idx)].status = 'Confirmed';
+                persist(); renderAttendees(event);
+            });
+        });
+
+        tbody.querySelectorAll('.decline-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                event.attendees[parseInt(btn.dataset.idx)].status = 'Declined';
+                persist(); renderAttendees(event);
+            });
+        });
 
         // Delete attendee buttons
         tbody.querySelectorAll('.delete-attendee-btn').forEach(btn => {
@@ -676,9 +722,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const event = state.events.find(e => e.id === state.selectedEventId);
         if (!event || !event.attendees.length) { alert('No attendees to remind.'); return; }
 
+        const total = event.attendees.length;
+        const responded = event.attendees.filter(a => a.status === 'Confirmed' || a.status === 'Declined').length;
+        
+        if (responded === total) {
+            showToast('All guests have responded — no reminders needed!', 2500);
+            return;
+        }
+
+        const invited = event.attendees.filter(a => a.status === 'Invited').length;
+
         showToast('Sending reminders...');
         setTimeout(() => {
-            const invited = event.attendees.filter(a => a.status === 'Invited').length;
+            showToast(`Reminders sent to ${invited} guests who haven't responded yet`, 3000);
             addNotif(`Reminders sent to ${invited} invited guests for "${event.title}".`);
         }, 1500);
     });

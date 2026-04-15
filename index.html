@@ -301,6 +301,18 @@
                             <button class="btn btn-outline btn-sm" id="send-invites-btn"><i class="fas fa-paper-plane"></i> Send Invitations</button>
                             <button class="btn btn-outline btn-sm" id="send-reminders-btn"><i class="fas fa-bell"></i> Send Reminders</button>
                         </div>
+                        
+                        <div id="rsvp-dashboard" style="margin-bottom: 1.5rem; display: none;">
+                            <div id="rsvp-summary" style="display: flex; gap: 10px; margin-bottom: 10px;"></div>
+                            <div id="rsvp-progress-container">
+                                <div class="rsvp-bar-track" style="height: 8px; display: flex; overflow: hidden; border-radius: var(--radius-sm); background: #e5e7eb;">
+                                    <div id="rsvp-progress-confirmed" style="background: var(--success); width: 0%;"></div>
+                                    <div id="rsvp-progress-declined" style="background: var(--danger); width: 0%;"></div>
+                                </div>
+                                <div id="rsvp-progress-label" class="text-sm text-muted" style="margin-top: 6px; text-align: left; font-weight: 500;"></div>
+                            </div>
+                        </div>
+
                         <table class="data-table">
                             <thead>
                                 <tr>
