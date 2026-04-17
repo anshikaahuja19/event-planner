@@ -1,11 +1,10 @@
 :root {
-    /* Sunflower Primary Palette */
+
     --primary: #d97706;
     --primary-hover: #b45309;
     --primary-light: #fffbeb;
     --primary-glow: rgba(217, 119, 6, 0.35);
 
-    /* Accent & Secondary */
     --secondary: #78716c;
     --success: #22c55e;
     --warning: #eab308;
@@ -14,7 +13,6 @@
     --petal: #fde68a;
     --leaf: #65a30d;
 
-    /* Neutral Palette (Warm White) */
     --bg-main: #fffdf7;
     --bg-card: #ffffff;
     --bg-sidebar: #fffef9;
@@ -22,7 +20,6 @@
     --text-muted: #78716c;
     --border: #f5f0e1;
 
-    /* Shadows & Effects */
     --shadow-sm: 0 1px 3px 0 rgba(180, 140, 50, 0.06);
     --shadow-md: 0 4px 12px -2px rgba(180, 140, 50, 0.1);
     --shadow-lg: 0 12px 28px -6px rgba(180, 140, 50, 0.15);
@@ -60,13 +57,11 @@ body {
     transition: background-color 0.35s ease, color 0.35s ease;
 }
 
-/* ========== LAYOUT ========== */
 .app-container {
     display: flex;
     min-height: 100vh;
 }
 
-/* ========== SIDEBAR ========== */
 .sidebar {
     width: 260px;
     background-color: var(--bg-sidebar);
@@ -169,7 +164,6 @@ body {
     border: 2px solid var(--petal);
 }
 
-/* ========== MAIN CONTENT ========== */
 .main-content {
     flex: 1;
     padding: 2rem 3rem;
@@ -254,7 +248,6 @@ body {
     justify-content: center;
 }
 
-/* ========== BUTTONS ========== */
 .btn {
     padding: 10px 20px;
     border-radius: var(--radius-md);
@@ -316,7 +309,6 @@ body {
     color: white;
 }
 
-/* ========== STATS GRID ========== */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -369,7 +361,6 @@ body {
     color: var(--text-main);
 }
 
-/* ========== SECTION HEADERS ========== */
 .section-header {
     display: flex;
     justify-content: space-between;
@@ -395,7 +386,6 @@ body {
     color: var(--text-muted);
 }
 
-/* ========== EVENT GRID ========== */
 .event-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -478,7 +468,6 @@ body {
 
 .text-primary { color: var(--primary); font-weight: 600; }
 
-/* ========== EMPTY STATE ========== */
 .empty-state {
     grid-column: 1 / -1;
     text-align: center;
@@ -508,7 +497,6 @@ body {
     margin-top: 1.5rem;
 }
 
-/* ========== MODAL ========== */
 .modal {
     display: none;
     position: fixed;
@@ -570,7 +558,6 @@ body {
     color: var(--danger);
 }
 
-/* Sunflower spin animation */
 .sunflower-spin {
     color: var(--honey);
     animation: spin 4s linear infinite;
@@ -582,7 +569,6 @@ body {
     to { transform: rotate(360deg); }
 }
 
-/* ========== FORMS ========== */
 .form-group {
     margin-bottom: 1.25rem;
 }
@@ -673,7 +659,6 @@ body {
     margin-top: 6px;
 }
 
-/* ========== VIEWS ========== */
 .view {
     display: none;
 }
@@ -683,7 +668,6 @@ body {
     animation: fadeIn 0.25s ease;
 }
 
-/* ========== DETAIL VIEW ========== */
 .detail-header {
     margin-bottom: 1.5rem;
 }
@@ -725,7 +709,6 @@ body {
     margin-top: 12px;
 }
 
-/* ========== TABS ========== */
 .tabs {
     display: flex;
     gap: 6px;
@@ -769,7 +752,6 @@ body {
     font-size: 1.1rem;
 }
 
-/* ========== TIMELINE ========== */
 .timeline-container {
     position: relative;
     padding-left: 2rem;
@@ -847,7 +829,6 @@ body {
     cursor: pointer;
 }
 
-/* ========== BUDGET ========== */
 .budget-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -930,7 +911,6 @@ body {
     align-items: end;
 }
 
-/* ========== DATA TABLE ========== */
 .data-table {
     width: 100%;
     border-collapse: collapse;
@@ -992,7 +972,6 @@ body {
     transform: scale(1.2);
 }
 
-/* ========== VENDOR ========== */
 .vendor-header {
     display: flex;
     justify-content: space-between;
@@ -1087,7 +1066,16 @@ body {
     border-color: var(--success);
 }
 
-/* ========== NOTIFICATION PANEL ========== */
+.ai-vendor-card {
+    border: 2px solid #8b5cf6; 
+    background: rgba(139, 92, 246, 0.05);
+    position: relative;
+}
+
+[data-theme="dark"] .ai-vendor-card {
+    background: rgba(139, 92, 246, 0.15);
+}
+
 .notif-panel {
     position: fixed;
     top: 70px;
@@ -1134,7 +1122,6 @@ body {
     border-bottom: none;
 }
 
-/* ========== ANALYTICS ========== */
 .analytics-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -1195,7 +1182,6 @@ body {
     color: var(--text-main);
 }
 
-/* ========== AI TOAST ========== */
 .ai-toast {
     position: fixed;
     bottom: 30px;
@@ -1223,7 +1209,6 @@ body {
     font-size: 1.1rem;
 }
 
-/* ========== PROXIMITY BADGES ========== */
 .proximity-badge {
     display: inline-flex;
     align-items: center;
@@ -1277,7 +1262,6 @@ body {
 .budget-card.warn { border-color: var(--honey); }
 .budget-card.over { border-color: var(--danger); }
 
-/* RSVP Summary */
 .rsvp-pill {
     padding: 6px 12px;
     border-radius: 20px;
@@ -1298,7 +1282,6 @@ body {
 .rsvp-pill.rsvp-declined { background-color: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
 .rsvp-pill.rsvp-awaiting { background-color: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
 
-/* ========== UTILITY ========== */
 .hidden { display: none !important; }
 
 .text-sm { font-size: 0.85rem; }
