@@ -12,7 +12,7 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar Navigation -->
+
         <aside class="sidebar">
             <div class="logo">
                 <img src="assets/logo.png" alt="IvoryEvents Logo">
@@ -42,7 +42,6 @@
             </div>
         </aside>
 
-        <!-- Main Content Area -->
         <main class="main-content">
             <header class="top-bar">
                 <div class="search-bar">
@@ -61,7 +60,7 @@
             </header>
 
             <div id="view-container">
-                <!-- Dashboard View (Default) -->
+
                 <section id="dashboard-view" class="view active">
                     <div class="welcome-header">
                         <h1 id="greeting-text">Good afternoon, Planner</h1>
@@ -117,7 +116,6 @@
                     </div>
                 </section>
 
-                <!-- My Events View -->
                 <section id="my-events-view" class="view">
                     <div class="section-header" style="margin-bottom:1.5rem;">
                         <h2>All My Events</h2>
@@ -132,7 +130,6 @@
                     </div>
                 </section>
 
-                <!-- Vendors View -->
                 <section id="vendors-view" class="view">
                     <div class="section-header" style="margin-bottom:1.5rem;">
                         <h2>Vendor Directory</h2>
@@ -147,7 +144,6 @@
                     <div class="vendor-grid" id="global-vendor-list"></div>
                 </section>
 
-                <!-- Analytics View -->
                 <section id="analytics-view" class="view">
                     <h2 style="margin-bottom:1.5rem;">Event Analytics</h2>
                     <div id="analytics-content">
@@ -159,7 +155,6 @@
                     </div>
                 </section>
 
-                <!-- Event Creation Modal -->
                 <div id="create-event-modal" class="modal">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -167,7 +162,7 @@
                             <button class="close-modal"><i class="fas fa-times"></i></button>
                         </div>
                         <form id="event-form" class="multi-step-form">
-                            <!-- Step 1: Basics -->
+
                             <div class="form-step active" data-step="1">
                                 <h3>Basic Information</h3>
                                 <div class="form-group">
@@ -205,7 +200,6 @@
                                 </div>
                             </div>
 
-                            <!-- Step 2: Budget -->
                             <div class="form-step" data-step="2">
                                 <h3>Budget & Preferences</h3>
                                 <div class="form-group">
@@ -231,7 +225,6 @@
                     </div>
                 </div>
 
-                <!-- Notification Panel -->
                 <div id="notif-panel" class="notif-panel hidden">
                     <div class="notif-header">
                         <h3>Notifications</h3>
@@ -242,7 +235,6 @@
                     </div>
                 </div>
 
-                <!-- Event Detail View -->
                 <section id="event-detail-view" class="view">
                     <div class="detail-header">
                         <button class="back-btn" id="detail-back-btn"><i class="fas fa-arrow-left"></i> Back</button>
@@ -263,6 +255,7 @@
                         <button class="tab-btn" data-tab="budget">Budget Split</button>
                         <button class="tab-btn" data-tab="attendees">Attendees</button>
                         <button class="tab-btn" data-tab="vendors">Vendor Research</button>
+                        <button class="tab-btn" data-tab="feedback">Feedback</button>
                     </div>
 
                     <div class="tab-content" id="timeline-tab">
@@ -301,7 +294,7 @@
                             <button class="btn btn-outline btn-sm" id="send-invites-btn"><i class="fas fa-paper-plane"></i> Send Invitations</button>
                             <button class="btn btn-outline btn-sm" id="send-reminders-btn"><i class="fas fa-bell"></i> Send Reminders</button>
                         </div>
-                        
+
                         <div id="rsvp-dashboard" style="margin-bottom: 1.5rem; display: none;">
                             <div id="rsvp-summary" style="display: flex; gap: 10px; margin-bottom: 10px;"></div>
                             <div id="rsvp-progress-container">
@@ -328,6 +321,20 @@
                     </div>
 
                     <div id="event-vendors-tab" class="tab-content hidden">
+                        <div class="ai-vendor-research-section" style="margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);">
+                            <div class="vendor-header" style="margin-bottom: 1rem;">
+                                <h3><i class="fas fa-robot"></i> AI Vendor Suggestions</h3>
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <input type="password" id="grok-api-key" placeholder="Groq API Key" class="form-control" style="width: 200px; padding: 0.4rem; border-radius: var(--radius-sm); border: 1px solid var(--border); font-family: inherit;">
+                                    <button class="btn btn-primary btn-sm" id="ai-research-vendor-btn"><i class="fas fa-magic"></i> AI Research Vendors</button>
+                                </div>
+                            </div>
+                            <div id="ai-vendor-container" style="display: none;">
+                                <h4 style="margin-bottom: 1rem; color: var(--primary);">Results from Groq</h4>
+                                <div class="vendor-grid" id="ai-vendor-list"></div>
+                            </div>
+                        </div>
+
                         <div class="vendor-header">
                             <h3>Curated Vendor Database</h3>
                             <div class="vendor-filters" id="detail-vendor-filters">
@@ -340,12 +347,15 @@
                         </div>
                         <div class="vendor-grid" id="vendor-list"></div>
                     </div>
+
+                    <div class="tab-content hidden" id="feedback-tab">
+
+                    </div>
                 </section>
             </div>
         </main>
     </div>
 
-    <!-- AI Toast Notification -->
     <div id="ai-toast" class="ai-toast hidden">
         <div class="ai-sparkle"><i class="fas fa-sun sunflower-spin"></i></div>
         <div class="ai-text">AI is generating your event timeline...</div>
