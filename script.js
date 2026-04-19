@@ -1,7 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // =========================================
-    //  STATE MANAGEMENT
-    // =========================================
+
     let state = {
         events: JSON.parse(localStorage.getItem('ep_events')) || [],
         selectedEventId: null,
@@ -16,11 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('ep_notifs', JSON.stringify(state.notifications));
     };
 
-    // =========================================
-    //  VENDOR DATABASE (with city, state, region for proximity matching)
-    // =========================================
     const VENDOR_DATABASE = [
-        // -- Delhi NCR Region --
+
         { id: 1,  name: "Grand Plaza Hotel",      category: "Venue",       rating: 4.8, price: "₹₹₹", city: "New Delhi",    state: "Delhi",         region: "North" },
         { id: 2,  name: "Garden Estates",          category: "Venue",       rating: 4.5, price: "₹₹",  city: "South Delhi",  state: "Delhi",         region: "North" },
         { id: 6,  name: "Royal Decorators",        category: "Decor",       rating: 4.7, price: "₹₹₹", city: "Gurugram",     state: "Haryana",       region: "North" },
@@ -28,35 +23,34 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 8,  name: "SnapClick Studios",       category: "Photography", rating: 4.6, price: "₹₹",  city: "Noida",        state: "Uttar Pradesh", region: "North" },
         { id: 10, name: "Capital Caterers",        category: "Catering",    rating: 4.5, price: "₹₹",  city: "New Delhi",    state: "Delhi",         region: "North" },
         { id: 11, name: "NCR Sound & Lights",      category: "Decor",       rating: 4.3, price: "₹",   city: "Faridabad",    state: "Haryana",       region: "North" },
-        // -- Rajasthan --
+
         { id: 3,  name: "Lakeside Convention",     category: "Venue",       rating: 4.3, price: "₹₹",  city: "Udaipur",      state: "Rajasthan",     region: "North" },
         { id: 5,  name: "Spice Kitchen",           category: "Catering",    rating: 4.4, price: "₹",   city: "Jaipur",       state: "Rajasthan",     region: "North" },
         { id: 12, name: "Desert Pearl Decor",      category: "Decor",       rating: 4.5, price: "₹₹",  city: "Jaipur",       state: "Rajasthan",     region: "North" },
         { id: 13, name: "Rajwada Photography",     category: "Photography", rating: 4.7, price: "₹₹₹", city: "Jodhpur",      state: "Rajasthan",     region: "North" },
-        // -- Maharashtra --
+
         { id: 4,  name: "Taste of India",          category: "Catering",    rating: 4.9, price: "₹₹",  city: "Mumbai",       state: "Maharashtra",   region: "West" },
         { id: 14, name: "Sea View Convention",     category: "Venue",       rating: 4.6, price: "₹₹₹", city: "Mumbai",       state: "Maharashtra",   region: "West" },
         { id: 15, name: "Pune Event Decorators",   category: "Decor",       rating: 4.4, price: "₹₹",  city: "Pune",         state: "Maharashtra",   region: "West" },
         { id: 16, name: "Western Lens Studios",    category: "Photography", rating: 4.5, price: "₹₹",  city: "Pune",         state: "Maharashtra",   region: "West" },
-        // -- Karnataka --
+
         { id: 9,  name: "Lens Masters",            category: "Photography", rating: 4.8, price: "₹₹₹", city: "Bangalore",    state: "Karnataka",     region: "South" },
         { id: 17, name: "Palace Grounds Venue",    category: "Venue",       rating: 4.7, price: "₹₹₹", city: "Bangalore",    state: "Karnataka",     region: "South" },
         { id: 18, name: "South Spice Caterers",    category: "Catering",    rating: 4.6, price: "₹₹",  city: "Bangalore",    state: "Karnataka",     region: "South" },
-        // -- Tamil Nadu --
+
         { id: 19, name: "Chennai Grand Hall",      category: "Venue",       rating: 4.4, price: "₹₹",  city: "Chennai",      state: "Tamil Nadu",    region: "South" },
         { id: 20, name: "Chettinad Caterers",      category: "Catering",    rating: 4.7, price: "₹₹",  city: "Chennai",      state: "Tamil Nadu",    region: "South" },
-        // -- Telangana --
+
         { id: 21, name: "Hyderabad Nawab Caterers", category: "Catering",   rating: 4.8, price: "₹₹₹", city: "Hyderabad",    state: "Telangana",     region: "South" },
         { id: 22, name: "Golconda Decor",          category: "Decor",       rating: 4.5, price: "₹₹",  city: "Hyderabad",    state: "Telangana",     region: "South" },
-        // -- West Bengal --
+
         { id: 23, name: "Kolkata Heritage Venue",  category: "Venue",       rating: 4.5, price: "₹₹",  city: "Kolkata",      state: "West Bengal",   region: "East" },
         { id: 24, name: "Bengal Feast Caterers",   category: "Catering",    rating: 4.6, price: "₹₹",  city: "Kolkata",      state: "West Bengal",   region: "East" },
-        // -- Gujarat --
+
         { id: 25, name: "Ahmedabad Grand Venue",   category: "Venue",       rating: 4.4, price: "₹₹",  city: "Ahmedabad",    state: "Gujarat",       region: "West" },
         { id: 26, name: "Gujarat Rasa Caterers",   category: "Catering",    rating: 4.5, price: "₹",   city: "Ahmedabad",    state: "Gujarat",       region: "West" }
     ];
 
-    // City → State lookup for proximity matching
     const CITY_STATE_MAP = {
         'new delhi': 'Delhi', 'delhi': 'Delhi', 'south delhi': 'Delhi', 'north delhi': 'Delhi',
         'noida': 'Uttar Pradesh', 'ghaziabad': 'Uttar Pradesh', 'lucknow': 'Uttar Pradesh', 'agra': 'Uttar Pradesh',
@@ -78,21 +72,20 @@ document.addEventListener('DOMContentLoaded', () => {
         'Madhya Pradesh': 'Central', 'Chhattisgarh': 'Central'
     };
 
-    /** Returns { city, state, region } from a user-entered location string */
     const resolveLocation = (locationStr) => {
         const lower = locationStr.trim().toLowerCase();
-        // Direct city match
+
         if (CITY_STATE_MAP[lower]) {
             const st = CITY_STATE_MAP[lower];
             return { city: locationStr.trim(), state: st, region: STATE_REGION_MAP[st] || 'Other' };
         }
-        // Try matching against known cities as substrings
+
         for (const [city, st] of Object.entries(CITY_STATE_MAP)) {
             if (lower.includes(city)) {
                 return { city, state: st, region: STATE_REGION_MAP[st] || 'Other' };
             }
         }
-        // Try matching state names directly
+
         for (const [st, reg] of Object.entries(STATE_REGION_MAP)) {
             if (lower.includes(st.toLowerCase())) {
                 return { city: locationStr.trim(), state: st, region: reg };
@@ -101,7 +94,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return { city: locationStr.trim(), state: null, region: null };
     };
 
-    /** Score vendor proximity: 3 = same city, 2 = same state, 1 = same region, 0 = other */
     const getProximityScore = (vendor, eventLoc) => {
         const vendorCity = vendor.city.toLowerCase();
         const eventCity = eventLoc.city.toLowerCase();
@@ -126,7 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
         other:      { venue: 0.30, catering: 0.30, decor: 0.15, logistics: 0.10, admin: 0.15 }
     };
 
-    // Timeline tasks defined by percentage of time between creation and event date
     const TIMELINE_TASKS = [
         { title: "Finalize Event Concept & Theme",        pct: 0.00, category: "Planning" },
         { title: "Research & Shortlist Vendors",          pct: 0.08, category: "Planning" },
@@ -141,9 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
         { title: "🌻 Event Day — Execute & Enjoy!",       pct: 1.00, category: "Execution" }
     ];
 
-    // =========================================
-    //  DOM SELECTORS
-    // =========================================
     const $ = (sel) => document.querySelector(sel);
     const $$ = (sel) => document.querySelectorAll(sel);
 
@@ -152,9 +140,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiToast = $('#ai-toast');
     const notifPanel = $('#notif-panel');
 
-    // =========================================
-    //  HELPERS
-    // =========================================
     const getEventIcon = (type) => {
         const icons = { wedding: 'fa-heart', corporate: 'fa-briefcase', birthday: 'fa-cake-candles', conference: 'fa-microphone', other: 'fa-calendar-day' };
         return icons[type] || 'fa-calendar';
@@ -192,16 +177,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // =========================================
-    //  NAVIGATION (ALL SIDEBAR + BUTTONS)
-    // =========================================
     const showView = (viewId) => {
         $$('.view').forEach(v => v.classList.remove('active'));
         const el = document.getElementById(viewId + '-view');
         if (el) el.classList.add('active');
         state.currentView = viewId;
 
-        // highlight nav
         $$('.nav-item').forEach(i => {
             i.classList.toggle('active', i.dataset.view === viewId);
         });
@@ -213,7 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const view = item.dataset.view;
             showView(view);
 
-            // render view-specific content
             if (view === 'dashboard') updateDashboard();
             if (view === 'my-events') renderAllEvents();
             if (view === 'vendors') renderGlobalVendors();
@@ -221,9 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // =========================================
-    //  DASHBOARD
-    // =========================================
     const updateDashboard = () => {
         $('#greeting-text').innerText = `${getGreeting()}, Planner`;
 
@@ -243,7 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
         $('#count-attendees').innerText = totalAtt;
         $('#count-tasks').innerText = `${completedTasks}/${totalTasks}`;
 
-        // Budget utilization
         let totalBudget = 0, totalSpent = 0;
         state.events.forEach(e => {
             totalBudget += parseInt(e.budget) || 0;
@@ -308,23 +284,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // View All link
     $('#view-all-link').addEventListener('click', (e) => {
         e.preventDefault();
         showView('my-events');
         renderAllEvents();
     });
 
-    // =========================================
-    //  MY EVENTS VIEW
-    // =========================================
     const renderAllEvents = () => {
         renderEventGrid($('#all-events-grid'), state.events);
     };
 
-    // =========================================
-    //  SEARCH
-    // =========================================
     $('#search-input').addEventListener('input', (e) => {
         const q = e.target.value.toLowerCase().trim();
         if (!q) {
@@ -341,9 +310,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderEventGrid(container, filtered);
     });
 
-    // =========================================
-    //  EVENT CREATION
-    // =========================================
     const openCreateModal = () => {
         createEventModal.classList.add('active');
         eventForm.reset();
@@ -358,7 +324,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => createEventModal.classList.remove('active'));
     });
 
-    // Close modal on backdrop click
     createEventModal.addEventListener('click', (e) => {
         if (e.target === createEventModal) createEventModal.classList.remove('active');
     });
@@ -371,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     $('.next-step').addEventListener('click', () => {
-        // validate step 1
+
         const title = $('#event-title').value.trim();
         const date = $('#event-date').value;
         const size = $('#event-size').value;
@@ -427,18 +392,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1800);
     });
 
-    // =========================================
-    //  AI SUGGESTION ENGINE (CSP)
-    // =========================================
     const generateAISuggestions = (type, budget, date, location) => {
-        // --- Budget Split ---
+
         const template = BUDGET_TEMPLATES[type] || BUDGET_TEMPLATES.other;
         const budgetSplit = {};
         Object.keys(template).forEach(cat => {
             budgetSplit[cat] = Math.round(budget * template[cat]);
         });
 
-        // --- Timeline: starts from TODAY, ends at event date ---
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const eventDate = new Date(date);
@@ -459,7 +420,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         });
 
-        // --- Vendor Suggestions: sorted by proximity ---
         const eventLoc = resolveLocation(location);
         const suggestedVendors = [...VENDOR_DATABASE]
             .map(v => ({ ...v, proximity: getProximityScore(v, eventLoc) }))
@@ -470,9 +430,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return { budgetSplit, timeline, suggestedVendors, eventLoc };
     };
 
-    // =========================================
-    //  EVENT DETAIL VIEW
-    // =========================================
     const showEventDetails = (eventId) => {
         const event = state.events.find(e => e.id === eventId);
         if (!event) return;
@@ -490,8 +447,8 @@ document.addEventListener('DOMContentLoaded', () => {
         renderBudget(event);
         renderAttendees(event);
         renderDetailVendors(event);
+        renderFeedbackTab(event);
 
-        // Reset tabs
         $$('.tab-btn').forEach(b => b.classList.remove('active'));
         $$('.tab-content').forEach(c => c.classList.add('hidden'));
         $('.tab-btn[data-tab="timeline"]').classList.add('active');
@@ -500,13 +457,11 @@ document.addEventListener('DOMContentLoaded', () => {
         showView('event-detail');
     };
 
-    // Back button
     $('#detail-back-btn').addEventListener('click', () => {
         showView('dashboard');
         updateDashboard();
     });
 
-    // Delete event
     $('#delete-event-btn').addEventListener('click', () => {
         if (!confirm('Are you sure you want to delete this event?')) return;
         state.events = state.events.filter(e => e.id !== state.selectedEventId);
@@ -516,9 +471,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateDashboard();
     });
 
-    // =========================================
-    //  TIMELINE
-    // =========================================
     const renderTimeline = (event) => {
         const container = $('#timeline-list');
         if (!event.timeline || event.timeline.length === 0) {
@@ -540,7 +492,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `).join('');
 
-        // Attach checkbox listeners
         container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
             cb.addEventListener('change', () => {
                 const taskId = cb.dataset.taskId;
@@ -554,22 +505,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // Optimize timeline button
     $('#optimize-timeline-btn').addEventListener('click', () => {
         const event = state.events.find(e => e.id === state.selectedEventId);
         if (!event || !event.timeline) return;
         showToast('Optimizing timeline...', 1500);
         setTimeout(() => {
-            // Move incomplete tasks forward slightly
+
             event.timeline.sort((a, b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1));
             persist();
             renderTimeline(event);
         }, 1500);
     });
 
-    // =========================================
-    //  BUDGET
-    // =========================================
     const renderBudget = (event) => {
         const budgetList = $('#budget-allocation-list');
         const entries = Object.entries(event.budgetSplit || {});
@@ -625,12 +572,10 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
         }).join('');
 
-        // Populate expense category dropdown
         const sel = $('#expense-category');
         sel.innerHTML = entries.map(([cat]) => `<option value="${cat}">${cat.charAt(0).toUpperCase() + cat.slice(1)}</option>`).join('');
     };
 
-    // Add expense
     $('#add-expense-btn').addEventListener('click', () => {
         const event = state.events.find(e => e.id === state.selectedEventId);
         if (!event) return;
@@ -646,13 +591,10 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast(`₹${amt.toLocaleString()} expense added to ${cat}.`);
     });
 
-    // =========================================
-    //  ATTENDEES
-    // =========================================
     const renderAttendees = (event) => {
         const tbody = $('#attendee-list');
         const rsvpDashboard = $('#rsvp-dashboard');
-        
+
         if (!event.attendees || event.attendees.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;">No attendees added yet.</td></tr>`;
             if (rsvpDashboard) rsvpDashboard.style.display = 'none';
@@ -673,11 +615,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="rsvp-pill rsvp-declined">✗ Declined: ${declined}</div>
                 <div class="rsvp-pill rsvp-awaiting">⏳ Awaiting: ${awaiting}</div>
             `;
-            
+
             const pctConf = total > 0 ? (confirmed / total) * 100 : 0;
             const pctDecl = total > 0 ? (declined / total) * 100 : 0;
             const respondedPct = total > 0 ? Math.round(((confirmed + declined) / total) * 100) : 0;
-            
+
             $('#rsvp-progress-confirmed').style.width = `${pctConf}%`;
             $('#rsvp-progress-declined').style.width = `${pctDecl}%`;
             $('#rsvp-progress-label').innerText = `${respondedPct}% responded`;
@@ -697,7 +639,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </tr>
         `).join('');
 
-        // Action listeners
         tbody.querySelectorAll('.confirm-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 event.attendees[parseInt(btn.dataset.idx)].status = 'Confirmed';
@@ -712,7 +653,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Delete attendee buttons
         tbody.querySelectorAll('.delete-attendee-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const idx = parseInt(btn.dataset.idx);
@@ -723,7 +663,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // Add attendee
     $('#add-attendee-btn').addEventListener('click', () => {
         const event = state.events.find(e => e.id === state.selectedEventId);
         if (!event) return;
@@ -739,7 +678,6 @@ document.addEventListener('DOMContentLoaded', () => {
         addNotif(`${name} added to "${event.title}".`);
     });
 
-    // Send invitations
     $('#send-invites-btn').addEventListener('click', () => {
         const event = state.events.find(e => e.id === state.selectedEventId);
         if (!event || !event.attendees.length) { alert('No attendees to invite.'); return; }
@@ -753,14 +691,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1500);
     });
 
-    // Send reminders
     $('#send-reminders-btn').addEventListener('click', () => {
         const event = state.events.find(e => e.id === state.selectedEventId);
         if (!event || !event.attendees.length) { alert('No attendees to remind.'); return; }
 
         const total = event.attendees.length;
         const responded = event.attendees.filter(a => a.status === 'Confirmed' || a.status === 'Declined').length;
-        
+
         if (responded === total) {
             showToast('All guests have responded — no reminders needed!', 2500);
             return;
@@ -775,9 +712,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1500);
     });
 
-    // =========================================
-    //  VENDORS (Detail View — sorted by proximity)
-    // =========================================
     const renderDetailVendors = (event, filter = 'All') => {
         const vendorList = $('#vendor-list');
         const eventLoc = event.eventLoc || resolveLocation(event.location);
@@ -787,12 +721,10 @@ document.addEventListener('DOMContentLoaded', () => {
             proximity: getProximityScore(v, eventLoc)
         }));
 
-        // Apply category filter
         if (filter !== 'All') {
             vendors = vendors.filter(v => v.category === filter);
         }
 
-        // Sort: highest proximity first, then by rating
         vendors.sort((a, b) => b.proximity - a.proximity || b.rating - a.rating);
 
         vendorList.innerHTML = vendors.map(v => {
@@ -818,7 +750,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
         }).join('');
 
-        // Vendor selection toggle
         vendorList.querySelectorAll('.vendor-select-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -836,7 +767,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // Detail vendor filter tags
     $('#detail-vendor-filters').addEventListener('click', (e) => {
         const tag = e.target.closest('.tag');
         if (!tag) return;
@@ -846,9 +776,124 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event) renderDetailVendors(event, tag.dataset.filter);
     });
 
-    // =========================================
-    //  VENDORS (Global View)
-    // =========================================
+    const renderAIVendors = (vendorsHtml) => {
+        const aiContainer = $('#ai-vendor-container');
+        const aiList = $('#ai-vendor-list');
+        aiList.innerHTML = vendorsHtml;
+        aiContainer.style.display = 'block';
+
+        aiList.querySelectorAll('.vendor-select-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const event = state.events.find(ev => ev.id === state.selectedEventId);
+                if (!event) return;
+
+                const rawId = btn.dataset.vid;
+                if (!event.selectedVendors) event.selectedVendors = [];
+                const idx = event.selectedVendors.indexOf(rawId);
+                if (idx > -1) {
+                    event.selectedVendors.splice(idx, 1);
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline');
+                    btn.innerHTML = 'Select Vendor';
+                    btn.closest('.vendor-card').classList.remove('selected-vendor');
+                } else {
+                    event.selectedVendors.push(rawId);
+                    btn.classList.add('btn-success');
+                    btn.classList.remove('btn-outline');
+                    btn.innerHTML = '<i class="fas fa-check"></i> Selected';
+                    btn.closest('.vendor-card').classList.add('selected-vendor');
+                }
+                persist();
+            });
+        });
+    };
+
+    $('#ai-research-vendor-btn').addEventListener('click', async () => {
+        const apiKey = $('#grok-api-key').value.trim();
+        if (!apiKey) {
+            alert('Please enter your Groq API Key first.');
+            return;
+        }
+
+        const event = state.events.find(ev => ev.id === state.selectedEventId);
+        if (!event) return;
+
+        $('#ai-vendor-container').style.display = 'none';
+        showToast('AI is researching vendors...', 0);
+
+        const prompt = `You are an expert Indian event planner. Suggest 5 real vendors for a ${event.type} event in ${event.location} with a budget of ₹${event.budget} and ${event.size} guests. For each vendor return ONLY a JSON array with these fields: name, category (one of: Venue/Catering/Decor/Photography), city, estimated_price (as ₹ symbols like ₹₹ or ₹₹₹), rating (4.0-5.0), why_recommended (one sentence). Return only the JSON array, no other text.`;
+
+        try {
+            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'llama-3.3-70b-versatile',
+                    messages: [{ role: 'user', content: prompt }]
+                })
+            });
+
+            if (!response.ok) throw new Error('API Error');
+
+            const data = await response.json();
+            const content = data.choices[0].message.content.trim();
+            aiToast.classList.add('hidden');
+
+            try {
+                let jsonStr = content;
+                if (jsonStr.includes('[')) {
+                    jsonStr = jsonStr.substring(jsonStr.indexOf('['), jsonStr.lastIndexOf(']') + 1);
+                }
+                const vendors = JSON.parse(jsonStr);
+
+                const html = vendors.map((v, i) => {
+                    const aiVid = `ai-${Date.now()}-${i}`;
+                    const isSelected = (event.selectedVendors || []).includes(aiVid);
+                    return `
+                    <div class="vendor-card ai-vendor-card ${isSelected ? 'selected-vendor' : ''}">
+                        <div class="vendor-card-top">
+                            <div>
+                                <h4>${v.name} <i class="fas fa-robot" style="color:var(--primary);font-size:0.75rem;" title="AI Suggested"></i></h4>
+                                <p class="text-sm text-muted">${v.category} • ${v.city}</p>
+                            </div>
+                            <div class="vendor-rating">${'★'.repeat(Math.floor(v.rating || 5))} <span class="text-sm text-muted">${v.rating}</span></div>
+                        </div>
+                        <div style="margin: 10px 0; font-size: 0.85rem; font-style: italic; color: var(--text-muted);">
+                            "${v.why_recommended}"
+                        </div>
+                        <div class="vendor-card-bottom">
+                            <span class="vendor-price">${v.estimated_price}</span>
+                            <button class="btn btn-sm ${isSelected ? 'btn-success' : 'btn-outline'} vendor-select-btn" data-vid="${aiVid}">
+                                ${isSelected ? '<i class="fas fa-check"></i> Selected' : 'Select Vendor'}
+                            </button>
+                        </div>
+                    </div>`;
+                }).join('');
+
+                renderAIVendors(html);
+            } catch (parseErr) {
+                console.error("JSON Parse Error", parseErr, content);
+                const rawHtml = `
+                    <div class="vendor-card ai-vendor-card" style="grid-column: 1 / -1;">
+                        <div class="vendor-card-top">
+                            <h4>Raw AI Response</h4>
+                        </div>
+                        <div style="white-space: pre-wrap; font-size: 0.85rem; color: var(--text-muted); margin-top: 10px;">${content}</div>
+                    </div>
+                `;
+                renderAIVendors(rawHtml);
+            }
+        } catch (err) {
+            console.error("Groq API Error", err);
+            aiToast.classList.add('hidden');
+            showToast('AI research failed. Check your API key and try again.', 3000);
+        }
+    });
+
     const renderGlobalVendors = (filter = 'All') => {
         const vendorList = $('#global-vendor-list');
         const filteredVendors = filter === 'All' ? VENDOR_DATABASE : VENDOR_DATABASE.filter(v => v.category === filter);
@@ -878,9 +923,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderGlobalVendors(tag.dataset.filter);
     });
 
-    // =========================================
-    //  ANALYTICS VIEW
-    // =========================================
     const renderAnalytics = () => {
         const container = $('#analytics-content');
         if (state.events.length === 0) {
@@ -893,7 +935,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Aggregate budget by category across all events
         const catTotals = {};
         const catSpent = {};
         state.events.forEach(ev => {
@@ -907,7 +948,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const maxVal = Math.max(...Object.values(catTotals), 1);
 
-        // Event summary
         const totalBudget = state.events.reduce((s, e) => s + (parseInt(e.budget) || 0), 0);
         const totalSpent = Object.values(catSpent).reduce((s, v) => s + v, 0);
         const totalAttendees = state.events.reduce((s, e) => s + (e.attendees ? e.attendees.length : 0), 0);
@@ -930,7 +970,209 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="stat-icon warm"><i class="fas fa-users"></i></div>
                     <div class="stat-info"><span class="label">Total Guests</span><span class="value">${totalAttendees}</span></div>
                 </div>
+            </div>`;
+
+        let atkConfirmed = 0;
+        let atkTotal = 0;
+        state.events.forEach(ev => {
+            if (ev.attendees && ev.attendees.length > 0) {
+                atkTotal += ev.attendees.length;
+                atkConfirmed += ev.attendees.filter(a => a.status === 'Confirmed').length;
+            }
+        });
+        const atkRate = atkTotal > 0 ? Math.round((atkConfirmed / atkTotal) * 100) : 0;
+
+        const attendanceCardHtml = atkTotal > 0 ? `
+            <div style="display: flex; align-items: center; gap: 1rem; margin-top: 1rem;">
+                <div style="width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(var(--success) ${atkRate}%, var(--border) 0); display: flex; align-items: center; justify-content: center; position: relative;">
+                    <div style="width: 65px; height: 65px; background: var(--bg-card); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700;">${atkRate}%</div>
+                </div>
+                <div>
+                    <h2 style="margin-bottom: 4px;">${atkRate}% Rate</h2>
+                    <p class="text-sm text-muted">${atkConfirmed} confirmed out of ${atkTotal} total guests across all events</p>
+                </div>
             </div>
+        ` : `<p class="text-muted" style="margin-top: 1rem;">No attendee data yet</p>`;
+
+        const budgetCardEvents = [...state.events].sort((a, b) => {
+            const getPct = ev => {
+                const bgt = parseInt(ev.budget) || 0;
+                if (!bgt) return 0;
+                let spt = 0;
+                if (ev.expenses) Object.values(ev.expenses).forEach(v => spt += v);
+                return (spt / bgt) * 100;
+            };
+            return getPct(b) - getPct(a);
+        });
+
+        let budgetListHtml = `<p class="text-muted" style="margin-top: 1rem;">No events yet</p>`;
+        if (budgetCardEvents.length > 0) {
+            budgetListHtml = `<div style="margin-top: 1rem; max-height: 200px; overflow-y: auto; padding-right: 10px;">` + budgetCardEvents.map(ev => {
+                const bgt = parseInt(ev.budget) || 0;
+                let spt = 0;
+                if (ev.expenses) Object.values(ev.expenses).forEach(v => spt += v);
+                const pct = bgt > 0 ? Math.round((spt / bgt) * 100) : 0;
+                const name = ev.title.length > 20 ? ev.title.substring(0, 17) + '...' : ev.title;
+                const color = pct >= 100 ? 'var(--danger)' : pct >= 80 ? 'var(--warning)' : 'var(--success)';
+
+                return `
+                <div style="margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px;">
+                        <strong>${name}</strong>
+                        <span style="color: ${color}; font-weight: 700;">${pct}% (₹${spt.toLocaleString()} / ₹${bgt.toLocaleString()})</span>
+                    </div>
+                    <div class="progress-bar" style="margin: 0; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;">
+                        <div style="width: ${Math.min(pct, 100)}%; height: 100%; background: ${color}; border-radius: 3px;"></div>
+                    </div>
+                </div>`;
+            }).join('') + `</div>`;
+        }
+
+        let trCount = 0;
+        let trTotalScore = 0;
+        let bestVendor = null;
+        let trHtmlStr = "";
+
+        state.events.forEach(ev => {
+            const svIds = ev.selectedVendors || [];
+            if (svIds.length === 0) return;
+
+            let evScore = 0;
+            let evCount = 0;
+
+            svIds.forEach(vid => {
+                if (typeof vid === 'string' && vid.startsWith('ai-')) return;
+                const vendorObj = VENDOR_DATABASE.find(v => v.id === parseInt(vid));
+                if (vendorObj && vendorObj.rating) {
+                    evScore += vendorObj.rating;
+                    evCount++;
+                    trTotalScore += vendorObj.rating;
+                    trCount++;
+                    if (!bestVendor || vendorObj.rating > bestVendor.rating) {
+                        bestVendor = vendorObj;
+                    }
+                }
+            });
+
+            if (evCount > 0) {
+                const evAvg = (evScore / evCount).toFixed(1);
+                trHtmlStr += `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border);">
+                    <div style="font-size: 0.85rem; font-weight: 600;">${ev.title.length > 20 ? ev.title.substring(0, 17) + '...' : ev.title}</div>
+                    <div style="text-align: right;">
+                        <div style="color: var(--honey); font-size: 0.9rem;">★ ${evAvg}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">${evCount} Vendor(s)</div>
+                    </div>
+                </div>`;
+            }
+        });
+
+        let vendorRatingHtml = `<p class="text-muted" style="margin-top: 1rem;">No vendors selected yet</p>`;
+        if (trCount > 0 && bestVendor) {
+            const overallAvg = (trTotalScore / trCount).toFixed(1);
+            vendorRatingHtml = `
+                <div style="margin-top: 1rem; display: flex; gap: 1.5rem; align-items: center; margin-bottom: 1rem;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--primary); line-height: 1;">${overallAvg}</div>
+                        <div style="color: var(--honey); font-size: 0.9rem;">${'★'.repeat(Math.round(overallAvg))}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Avg across ${trCount} vendor(s)</div>
+                    </div>
+                    <div style="flex: 1; font-size: 0.8rem;">
+                        <span style="color: var(--text-muted);">Highest Rated:</span><br>
+                        <strong>${bestVendor.name}</strong> (★${bestVendor.rating})
+                    </div>
+                </div>
+                <div style="max-height: 120px; overflow-y: auto; padding-right: 5px;">
+                    ${trHtmlStr}
+                </div>
+            `;
+        }
+
+        let rsvpInvited = 0;
+        let rsvpConfirmed = 0;
+        let rsvpDeclined = 0;
+        state.events.forEach(ev => {
+            if (ev.attendees) {
+                ev.attendees.forEach(a => {
+                    const st = a.status;
+                    if (st === 'Invited' || st === 'Confirmed' || st === 'Declined') {
+                        rsvpInvited++;
+                        if (st === 'Confirmed') rsvpConfirmed++;
+                        if (st === 'Declined') rsvpDeclined++;
+                    }
+                });
+            }
+        });
+
+        const rsvpResponded = rsvpConfirmed + rsvpDeclined;
+        const rsvpPending = rsvpInvited - rsvpResponded;
+        const rsvpRate = rsvpInvited > 0 ? Math.round((rsvpResponded / rsvpInvited) * 100) : 0;
+
+        let rsvpHtml = `<p class="text-muted" style="margin-top: 1rem;">No invitations tracked yet</p>`;
+        if (rsvpInvited > 0) {
+            const pctConf = (rsvpConfirmed / rsvpInvited) * 100;
+            const pctDecl = (rsvpDeclined / rsvpInvited) * 100;
+            const pctPend = (rsvpPending / rsvpInvited) * 100;
+
+            rsvpHtml = `
+                <div style="margin-top: 1rem; margin-bottom: 2rem;">
+                    <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 0.5rem;">
+                        <h2 style="margin: 0; color: var(--text-main); font-size: 1.8rem;">${rsvpRate}%</h2>
+                        <span class="text-muted text-sm" style="font-weight: 500;">response rate (${rsvpResponded}/${rsvpInvited} guests)</span>
+                    </div>
+
+                    <div style="height: 12px; display: flex; border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 0.8rem; background: #e5e7eb;">
+                        <div style="width: ${pctConf}%; background: var(--success);" title="Confirmed"></div>
+                        <div style="width: ${pctDecl}%; background: var(--danger);" title="Declined"></div>
+                        <div style="width: ${pctPend}%; background: #9ca3af;" title="Pending"></div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
+                        <span><b style="color: var(--success);">${rsvpConfirmed}</b> Confirmed</span>
+                        <span><b style="color: var(--danger);">${rsvpDeclined}</b> Declined</span>
+                        <span><b style="color: #6b7280;">${rsvpPending}</b> Pending</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        container.innerHTML += `
+            <div class="analytics-grid" style="margin-bottom: 2rem;">
+                <div class="analytics-card">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div class="stat-icon amber" style="width: 32px; height: 32px; font-size: 0.9rem; border-radius: 6px;"><i class="fas fa-users-check"></i></div>
+                        <h4 style="margin: 0;">Attendance Rate</h4>
+                    </div>
+                    ${attendanceCardHtml}
+                </div>
+
+                <div class="analytics-card">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div class="stat-icon green" style="width: 32px; height: 32px; font-size: 0.9rem; border-radius: 6px;"><i class="fas fa-wallet"></i></div>
+                        <h4 style="margin: 0;">Budget Utilization</h4>
+                    </div>
+                    ${budgetListHtml}
+                </div>
+
+                <div class="analytics-card">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div class="stat-icon honey" style="width: 32px; height: 32px; font-size: 0.9rem; border-radius: 6px;"><i class="fas fa-star"></i></div>
+                        <h4 style="margin: 0;">Vendor Ratings Summary</h4>
+                    </div>
+                    ${vendorRatingHtml}
+                </div>
+
+                <div class="analytics-card">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div class="stat-icon warm" style="width: 32px; height: 32px; font-size: 0.9rem; border-radius: 6px;"><i class="fas fa-envelope-open-text"></i></div>
+                        <h4 style="margin: 0;">RSVP Response Rate</h4>
+                    </div>
+                    ${rsvpHtml}
+                </div>
+            </div>
+        `;
+
+        container.innerHTML += `
             <div class="analytics-grid">
                 <div class="analytics-card">
                     <h4>Budget Allocation by Category</h4>
@@ -961,7 +1203,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>`;
 
-        // Render overspent categories summary
         const overspentList = Object.entries(catTotals).filter(([cat, allocated]) => (catSpent[cat] || 0) > allocated);
         const overspentHtml = overspentList.length > 0 
             ? overspentList.map(([cat, allocated]) => {
@@ -983,9 +1224,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
     };
 
-    // =========================================
-    //  NOTIFICATIONS
-    // =========================================
     const renderNotifications = () => {
         const badge = $('#notif-badge');
         badge.innerText = state.notifications.length;
@@ -1018,16 +1256,209 @@ document.addEventListener('DOMContentLoaded', () => {
         renderNotifications();
     });
 
-    // Close notif panel on outside click
     document.addEventListener('click', (e) => {
         if (!notifPanel.contains(e.target) && !$('#notif-btn').contains(e.target)) {
             notifPanel.classList.add('hidden');
         }
     });
 
-    // =========================================
-    //  TAB SWITCHING
-    // =========================================
+    const renderFeedbackTab = (event) => {
+        const container = $('#feedback-tab');
+        if (!event) return;
+
+        let tempRatings = { overall: 0, venue: 0, catering: 0, org: 0 };
+        let tempNps = null;
+
+        const eventDate = new Date(event.date);
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        const renderStarsHtml = (group, rating) => {
+            let html = '<div class="star-group" data-group="'+group+'">';
+            for(let i=1; i<=5; i++) {
+                html += `<span class="rating-star" data-val="${i}" style="cursor:pointer; font-size:1.8rem; color:${i<=rating ? 'var(--honey)' : 'var(--border)'}; margin-right:4px;">${i<=rating ? '★' : '☆'}</span>`;
+            }
+            html += '</div>';
+            return html;
+        };
+
+        if (event.feedback) {
+            const f = event.feedback;
+            const avg = ((f.overallRating + f.venueRating + f.cateringRating + f.organizationRating)/4).toFixed(1);
+            container.innerHTML = `
+                <div class="feedback-summary card" style="max-width: 600px; margin: 0 auto; background: var(--bg-card); padding: 2rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+                    <div style="text-align: center; margin-bottom: 2rem;">
+                        <div style="font-size: 3rem; color: var(--success);"><i class="fas fa-check-circle"></i></div>
+                        <h2>Feedback Recorded!</h2>
+                        <div style="font-size: 1.5rem; color: var(--honey); font-weight: 700; margin-top: 0.5rem;">${avg}/5 Average Rating</div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                        <div><span class="text-muted text-sm">Overall</span><br>${renderStarsHtml('x', f.overallRating).replace(/cursor:pointer/g, 'cursor:default')}</div>
+                        <div><span class="text-muted text-sm">Venue</span><br>${renderStarsHtml('x', f.venueRating).replace(/cursor:pointer/g, 'cursor:default')}</div>
+                        <div><span class="text-muted text-sm">Catering</span><br>${renderStarsHtml('x', f.cateringRating).replace(/cursor:pointer/g, 'cursor:default')}</div>
+                        <div><span class="text-muted text-sm">Organization</span><br>${renderStarsHtml('x', f.organizationRating).replace(/cursor:pointer/g, 'cursor:default')}</div>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <span class="text-muted text-sm">What went well</span>
+                        <p style="background: var(--bg-main); padding: 1rem; border-radius: var(--radius-sm); margin-top: 4px;">${f.wentWell || '<i>No comments</i>'}</p>
+                    </div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <span class="text-muted text-sm">What to improve</span>
+                        <p style="background: var(--bg-main); padding: 1rem; border-radius: var(--radius-sm); margin-top: 4px;">${f.improve || '<i>No comments</i>'}</p>
+                    </div>
+                    <div style="margin-bottom: 2rem;">
+                        <span class="text-muted text-sm">Would you recommend?</span>
+                        <div style="font-weight: 600; margin-top: 4px; color: var(--primary);">${f.nps}</div>
+                    </div>
+
+                    <button class="btn btn-outline" id="resubmit-feedback-btn" style="width: 100%;"><i class="fas fa-redo"></i> Re-submit Feedback</button>
+                </div>
+            `;
+
+            $('#resubmit-feedback-btn').addEventListener('click', () => {
+                delete event.feedback;
+                persist();
+                renderFeedbackTab(event);
+            });
+            return;
+        }
+
+        if (eventDate > today) {
+            container.innerHTML = `
+                <div class="empty-state" style="padding: 4rem 1rem;">
+                    <div class="empty-icon" style="color: var(--success);"><i class="fas fa-seedling"></i></div>
+                    <h3>Event Not Yet Completed</h3>
+                    <p>Feedback will be available after your event on <b>${formatDate(event.date)}</b>.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="feedback-form" style="max-width: 600px; margin: 0 auto; background: var(--bg-card); padding: 2rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+                <h3 style="margin-bottom: 1.5rem; text-align: center;">Post-Event Feedback</h3>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 4px;">Overall Rating*</label>
+                    <div id="fb-stars-overall">${renderStarsHtml('overall', 0)}</div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 4px;">Venue</label>
+                        <div id="fb-stars-venue">${renderStarsHtml('venue', 0)}</div>
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 4px;">Catering</label>
+                        <div id="fb-stars-catering">${renderStarsHtml('catering', 0)}</div>
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 4px;">Organization</label>
+                        <div id="fb-stars-org">${renderStarsHtml('org', 0)}</div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label>What went well?</label>
+                    <textarea class="form-control" id="fb-went-well" rows="3" placeholder="What worked great?"></textarea>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label>What to improve?</label>
+                    <textarea class="form-control" id="fb-improve" rows="3" placeholder="What could be better?"></textarea>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 8px;">Would you recommend this event?*</label>
+                    <div style="display: flex; gap: 1rem;" id="fb-nps-group">
+                        <button class="btn btn-outline fb-nps-btn" data-val="Yes">Yes</button>
+                        <button class="btn btn-outline fb-nps-btn" data-val="Maybe">Maybe</button>
+                        <button class="btn btn-outline fb-nps-btn" data-val="No">No</button>
+                    </div>
+                </div>
+
+                <button class="btn btn-success" id="submit-feedback-btn" style="width: 100%;"><i class="fas fa-paper-plane"></i> Submit Feedback</button>
+            </div>
+        `;
+
+        const attachStarLogic = (groupStr, keyStr) => {
+            const groupEl = container.querySelector(('#fb-stars-'+groupStr) + ' .star-group');
+            if(!groupEl) return;
+            const stars = groupEl.querySelectorAll('.rating-star');
+
+            stars.forEach(star => {
+                star.addEventListener('mouseenter', () => {
+                    const val = parseInt(star.dataset.val);
+                    stars.forEach(s => {
+                        const sVal = parseInt(s.dataset.val);
+                        s.innerText = sVal <= val ? '★' : '☆';
+                        s.style.color = sVal <= val ? 'var(--honey)' : 'var(--border)';
+                    });
+                });
+
+                star.addEventListener('mouseleave', () => {
+                    const activeVal = tempRatings[keyStr];
+                    stars.forEach(s => {
+                        const sVal = parseInt(s.dataset.val);
+                        s.innerText = sVal <= activeVal ? '★' : '☆';
+                        s.style.color = sVal <= activeVal ? 'var(--honey)' : 'var(--border)';
+                    });
+                });
+
+                star.addEventListener('click', () => {
+                    tempRatings[keyStr] = parseInt(star.dataset.val);
+                });
+            });
+        };
+
+        attachStarLogic('overall', 'overall');
+        attachStarLogic('venue', 'venue');
+        attachStarLogic('catering', 'catering');
+        attachStarLogic('org', 'org');
+
+        container.querySelectorAll('.fb-nps-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                container.querySelectorAll('.fb-nps-btn').forEach(b => {
+                    b.classList.remove('btn-primary');
+                    b.classList.add('btn-outline');
+                });
+                btn.classList.add('btn-primary');
+                btn.classList.remove('btn-outline');
+                tempNps = btn.dataset.val;
+            });
+        });
+
+        $('#submit-feedback-btn').addEventListener('click', () => {
+            if (tempRatings.overall === 0) {
+                alert("Please provide an overall rating");
+                return;
+            }
+            if (!tempNps) {
+                alert("Please answer if you would recommend this event");
+                return;
+            }
+
+            event.feedback = {
+                overallRating: tempRatings.overall,
+                venueRating: tempRatings.venue,
+                cateringRating: tempRatings.catering,
+                organizationRating: tempRatings.org,
+                wentWell: $('#fb-went-well').value.trim(),
+                improve: $('#fb-improve').value.trim(),
+                nps: tempNps,
+                submittedAt: new Date().toISOString()
+            };
+
+            persist();
+
+            addNotif(`Feedback submitted for "${event.title}"`);
+
+            renderFeedbackTab(event);
+        });
+    };
+
     $$('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             $$('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1035,21 +1466,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             btn.classList.add('active');
             const tabName = btn.dataset.tab;
-            // Map tab names to element IDs
+
             const tabMap = {
                 'timeline': 'timeline-tab',
                 'budget': 'budget-tab',
                 'attendees': 'attendees-tab',
-                'vendors': 'event-vendors-tab'
+                'vendors': 'event-vendors-tab',
+                'feedback': 'feedback-tab'
             };
             const tabEl = document.getElementById(tabMap[tabName]);
             if (tabEl) tabEl.classList.remove('hidden');
         });
     });
 
-    // =========================================
-    //  THEME TOGGLE
-    // =========================================
     $('#theme-toggle').addEventListener('click', () => {
         state.isDarkMode = !state.isDarkMode;
         document.body.setAttribute('data-theme', state.isDarkMode ? 'dark' : 'light');
@@ -1058,9 +1487,6 @@ document.addEventListener('DOMContentLoaded', () => {
             : '<i class="fas fa-moon"></i>';
     });
 
-    // =========================================
-    //  INITIALIZE
-    // =========================================
     updateDashboard();
     renderNotifications();
 });
