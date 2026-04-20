@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
+    let grokBudgetApiKey = (typeof ENV !== 'undefined' && ENV.GROK_API_KEY) ? ENV.GROK_API_KEY : '';
     let state = {
         events: JSON.parse(localStorage.getItem('ep_events')) || [],
         selectedEventId: null,
@@ -530,6 +531,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const renderBudget = (event) => {
+        if (!event.expenseLog) {
+            event.expenseLog = [];
+            if (event.expenses) {
+                Object.entries(event.expenses).forEach(([cat, amt]) => {
+                    if (amt > 0) {
+                        event.expenseLog.push({
+                            id: 'exp-legacy-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+                            category: cat,
+                            amount: amt,
+                            note: 'Legacy record',
+                            date: event.createdAt || new Date().toISOString()
+                        });
+                    }
+                });
+            }
+        }
+
+        event.expenses = {};
+        event.expenseLog.forEach(exp => {
+            event.expenses[exp.category] = (event.expenses[exp.category] || 0) + parseInt(exp.amount);
+        });
+
         const budgetList = $('#budget-allocation-list');
         const entries = Object.entries(event.budgetSplit || {});
         if (entries.length === 0) {
@@ -545,13 +568,20 @@ document.addEventListener('DOMContentLoaded', () => {
             Object.values(event.expenses).forEach(v => totalSpent += v);
         }
         const totalPct = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
-        const totalOver = totalSpent > totalBudget;
 
-        const headerEl = $('.budget-total');
-        if (headerEl) {
-            headerEl.innerHTML = totalOver
-                ? `<span style="color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Total Spent: ₹${totalSpent.toLocaleString()} / ₹${totalBudget.toLocaleString()} Budget (${totalPct}% used)</span>`
-                : `Total Spent: ₹${totalSpent.toLocaleString()} / ₹${totalBudget.toLocaleString()} Budget (${totalPct}% used)`;
+        const meterContainer = $('#budget-meter-container');
+        if (meterContainer) {
+            const barColor = totalPct < 60 ? 'var(--success)' : totalPct < 80 ? 'var(--warning)' : totalPct < 100 ? 'var(--orange, orange)' : 'var(--danger)';
+            const remainAmt = totalBudget - totalSpent;
+            meterContainer.innerHTML = `
+                <div style="margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: baseline;">
+                    <span style="font-size: 1.5rem; font-weight: 700;">₹${totalSpent.toLocaleString()} <span style="font-size: 1rem; color: var(--muted); font-weight: 400;">/ ₹${totalBudget.toLocaleString()} (${totalPct}% used)</span></span>
+                    <span style="font-weight: 500; color: ${remainAmt >= 0 ? 'var(--success)' : 'var(--danger)'};">Remaining: ₹${remainAmt.toLocaleString()}</span>
+                </div>
+                <div class="progress-bar" style="height: 12px; background: var(--border); border-radius: var(--radius-sm);">
+                    <div class="progress-fill" style="width: ${Math.min(totalPct, 100)}%; background: ${barColor}; height: 100%; border-radius: var(--radius-sm); transition: width 0.3s ease;"></div>
+                </div>
+            `;
         }
 
         budgetList.innerHTML = entries.map(([category, allocated]) => {
@@ -564,6 +594,22 @@ document.addEventListener('DOMContentLoaded', () => {
             let borderClass = '';
             if (isOver) borderClass = 'over';
             else if (isWarning) borderClass = 'warn';
+
+            let velocityText = '';
+            if (spent === 0) {
+                velocityText = '<span style="color: var(--muted); margin-top: 0.4rem; display: block; font-size: 0.8rem;">Not started</span>';
+            } else if (spent >= allocated) {
+                velocityText = '<span style="color: var(--success); margin-top: 0.4rem; display: block; font-size: 0.8rem;">✓ Complete</span>';
+            } else {
+                const catLogs = event.expenseLog.filter(l => l.category === category).sort((a,b) => new Date(b.date) - new Date(a.date));
+                if (catLogs.length >= 2) {
+                    const l1 = parseInt(catLogs[0].amount);
+                    const l2 = parseInt(catLogs[1].amount);
+                    if (l1 > allocated * 0.2 && l2 > allocated * 0.2) {
+                        velocityText = '<span style="color: var(--orange, orange); margin-top: 0.4rem; display: block; font-size: 0.8rem;">⚡ Spending fast</span>';
+                    }
+                }
+            }
 
             return `
             <div class="budget-card ${borderClass}">
@@ -581,11 +627,41 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span>Spent: ₹${spent.toLocaleString()}</span>
                     <span>${pct}% used</span>
                 </div>
+                ${velocityText}
             </div>`;
         }).join('');
 
         const sel = $('#expense-category');
-        sel.innerHTML = entries.map(([cat]) => `<option value="${cat}">${cat.charAt(0).toUpperCase() + cat.slice(1)}</option>`).join('');
+        if(sel) sel.innerHTML = entries.map(([cat]) => `<option value="${cat}">${cat.charAt(0).toUpperCase() + cat.slice(1)}</option>`).join('');
+
+        const historyList = $('#expense-history-list');
+        if (historyList) {
+            if (event.expenseLog.length === 0) {
+                historyList.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;">No expenses recorded yet.</td></tr>';
+            } else {
+                const sortedLogs = [...event.expenseLog].sort((a,b) => new Date(b.date) - new Date(a.date));
+                historyList.innerHTML = sortedLogs.map(exp => `
+                    <tr>
+                        <td>${formatDate(exp.date)}</td>
+                        <td>${exp.category}</td>
+                        <td>₹${parseInt(exp.amount).toLocaleString()}</td>
+                        <td>${exp.note || '-'}</td>
+                        <td style="text-align: center;">
+                            <button class="btn btn-sm btn-outline delete-expense-btn" data-id="${exp.id}"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                historyList.querySelectorAll('.delete-expense-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const id = e.currentTarget.dataset.id;
+                        event.expenseLog = event.expenseLog.filter(l => l.id !== id);
+                        persist();
+                        renderBudget(event);
+                    });
+                });
+            }
+        }
     };
 
     $('#add-expense-btn').addEventListener('click', () => {
@@ -593,13 +669,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!event) return;
         const cat = $('#expense-category').value;
         const amt = parseInt($('#expense-amount').value);
+        const note = $('#expense-note').value.trim();
         if (!cat || !amt || amt <= 0) { alert('Enter a valid category and amount.'); return; }
 
-        if (!event.expenses) event.expenses = {};
-        event.expenses[cat] = (event.expenses[cat] || 0) + amt;
+        if (!event.expenseLog) event.expenseLog = [];
+        event.expenseLog.push({
+            id: 'exp-' + Date.now(),
+            category: cat,
+            amount: amt,
+            note: note,
+            date: new Date().toISOString()
+        });
+        
         persist();
         renderBudget(event);
         $('#expense-amount').value = '';
+        $('#expense-note').value = '';
         showToast(`₹${amt.toLocaleString()} expense added to ${cat}.`);
     });
 
@@ -624,6 +709,169 @@ document.addEventListener('DOMContentLoaded', () => {
         if (flagged > 0) persist();
         return flagged;
     };
+
+    $('#ai-budget-toggle').addEventListener('click', () => {
+        $('#ai-budget-toggle').classList.toggle('active');
+        $('#ai-budget-content').classList.toggle('hidden');
+    });
+
+    $('#expense-history-toggle').addEventListener('click', () => {
+        $('#expense-history-toggle').classList.toggle('active');
+        $('#expense-history-content').classList.toggle('hidden');
+    });
+
+    const apiKeyInput = $('#grok-budget-api-key');
+    if (apiKeyInput) {
+        if (grokBudgetApiKey) {
+            apiKeyInput.value = grokBudgetApiKey;
+        }
+        apiKeyInput.addEventListener('change', (e) => {
+            grokBudgetApiKey = e.target.value.trim();
+        });
+    }
+
+    $('#dismiss-recommendations-btn').addEventListener('click', () => {
+        $('#ai-budget-recommendations').style.display = 'none';
+    });
+
+    $('#optimize-budget-btn').addEventListener('click', async () => {
+        const event = state.events.find(e => e.id === state.selectedEventId);
+        if (!event) return;
+        
+        if (!grokBudgetApiKey) {
+            showToast("Please enter your Grok API key first", 2500);
+            return;
+        }
+
+        showToast('AI is analyzing your budget...', 0);
+
+        const prompt = `You are an expert Indian event budget consultant. 
+Analyze this event budget and give optimization advice.
+
+Event Type: ${event.type}
+Total Budget: ₹${event.budget}
+Guest Count: ${event.size}
+Location: ${event.location}
+
+Current Budget Allocation:
+${JSON.stringify(event.budgetSplit)}
+
+Current Actual Spending:
+${JSON.stringify(event.expenses)}
+
+Give me exactly 3 specific actionable recommendations to optimize this budget. For each recommendation include:
+- Which category to adjust
+- How much to increase or decrease (in ₹)
+- Why this change makes sense for this event type
+
+Return ONLY a JSON array with 3 objects, each having:
+category, action (increase/decrease/reallocate), amount, reason
+No other text, just the JSON array.`;
+
+        try {
+            const response = await fetch("https://api.x.ai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${grokBudgetApiKey}`
+                },
+                body: JSON.stringify({
+                    model: "grok-3-mini",
+                    messages: [
+                        { role: "system", content: "You strictly reply with valid JSON array." },
+                        { role: "user", content: prompt }
+                    ]
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error("API failed");
+            }
+
+            const data = await response.json();
+            let aiText = data.choices[0].message.content;
+            
+            aiText = aiText.replace(/```json/g, "").replace(/```/g, "").trim();
+            
+            const results = JSON.parse(aiText);
+            
+            aiToast.classList.add('hidden');
+            
+            const recPanel = $('#ai-budget-recommendations');
+            const recList = $('#ai-recommendations-list');
+            
+            recList.innerHTML = results.map((rec, idx) => {
+                let badgeColor = 'var(--primary)';
+                if (rec.action === 'increase') badgeColor = 'var(--success)';
+                if (rec.action === 'decrease') badgeColor = 'var(--danger)';
+                if (rec.action === 'reallocate') badgeColor = 'var(--warning)';
+                
+                return `
+                <div class="vendor-card" style="display: flex; flex-direction: column;">
+                    <div class="vendor-card-header" style="flex-wrap: wrap;">
+                        <div class="vendor-icon"><i class="fas ${getCategoryIcon(rec.category)}"></i></div>
+                        <div>
+                            <h4>${rec.category.charAt(0).toUpperCase() + rec.category.slice(1)}</h4>
+                            <span class="status-tag" style="background: ${badgeColor}; color: white; border: none; font-size: 0.7rem; padding: 0.1rem 0.5rem; line-height: 1.2;">
+                                ${rec.action.toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="vendor-card-body" style="flex-grow: 1;">
+                        <p class="text-sm"><strong>Amount:</strong> ₹${parseInt(rec.amount).toLocaleString()}</p>
+                        <p class="text-sm text-muted" style="margin-top: 0.5rem;">${rec.reason}</p>
+                    </div>
+                    <div class="vendor-card-footer" style="padding-top: 1rem; margin-top: auto; border-top: 1px solid var(--border);">
+                        <button class="btn btn-sm btn-primary apply-ai-rec-btn" style="width: 100%;" 
+                            data-cat="${rec.category}" 
+                            data-action="${rec.action}" 
+                            data-amt="${rec.amount}">
+                            Apply Recommendation
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+            
+            recPanel.style.display = 'block';
+            
+            recList.querySelectorAll('.apply-ai-rec-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const bt = e.currentTarget;
+                    const cat = bt.dataset.cat.toLowerCase();
+                    const action = bt.dataset.action.toLowerCase();
+                    const amt = parseInt(bt.dataset.amt);
+                    
+                    if (event.budgetSplit[cat] !== undefined) {
+                        if (action === 'increase') {
+                            event.budgetSplit[cat] += amt;
+                        } else if (action === 'decrease') {
+                            event.budgetSplit[cat] = Math.max(0, event.budgetSplit[cat] - amt);
+                        } else if (action === 'reallocate') {
+                            event.budgetSplit[cat] = amt;
+                        }
+                        persist();
+                        renderBudget(event);
+                        showToast(`Budget updated for ${cat}!`, 2000);
+                        bt.disabled = true;
+                        bt.innerText = "Applied ✓";
+                        bt.classList.replace('btn-primary', 'btn-outline');
+                    }
+                });
+            });
+
+        } catch (error) {
+            console.error("AI Optimization Error:", error);
+            aiToast.classList.add('hidden');
+            showToast("Optimization failed.", 3000);
+            
+            $('#ai-budget-recommendations').style.display = 'block';
+            $('#ai-recommendations-list').innerHTML = `
+                <div style="grid-column: 1 / -1; padding: 1rem; border: 1px solid var(--danger); border-radius: var(--radius-sm); color: var(--danger);">
+                    <strong>Error:</strong> Could not parse optimization data. Please check your API key and try again.
+                </div>
+            `;
+        }
+    });
 
     const renderAttendees = (event) => {
         const tbody = $('#attendee-list');

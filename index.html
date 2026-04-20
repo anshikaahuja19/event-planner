@@ -267,11 +267,38 @@
                     </div>
 
                     <div class="tab-content hidden" id="budget-tab">
-                        <div class="ai-header">
-                            <h3><i class="fas fa-wallet"></i> Budget Allocation</h3>
-                            <div class="budget-total">Total: <span id="budget-total-val">₹0</span></div>
+                        <div class="ai-header" style="flex-wrap: wrap; gap: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                <h3><i class="fas fa-wallet"></i> Budget Allocation</h3>
+                                <button class="btn btn-primary btn-sm" id="optimize-budget-btn"><i class="fas fa-magic"></i> Optimize Budget</button>
+                            </div>
+                            <div id="budget-meter-container" style="width: 100%;"></div>
                         </div>
+
+                        <div class="email-settings-section" style="margin-bottom: 2rem;">
+                            <button class="accordion-trigger" id="ai-budget-toggle">
+                                <span><i class="fas fa-robot"></i> AI Budget Optimizer</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="accordion-content hidden" id="ai-budget-content">
+                                <div class="form-group" style="max-width: 300px;">
+                                    <label for="grok-budget-api-key">Grok API Key</label>
+                                    <input type="password" id="grok-budget-api-key" placeholder="Enter API Key" class="form-control" style="width: 100%; padding: 0.4rem; border-radius: var(--radius-sm); border: 1px solid var(--border); font-family: inherit;">
+                                    <p class="helper-text">Enter your Grok API key to enable AI optimization</p>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="budget-grid" id="budget-allocation-list"></div>
+
+                        <div id="ai-budget-recommendations" style="display: none; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3 style="color: var(--primary);"><i class="fas fa-robot"></i> AI Recommendations</h3>
+                                <button class="btn btn-outline btn-sm" id="dismiss-recommendations-btn">Dismiss</button>
+                            </div>
+                            <div class="vendor-grid" id="ai-recommendations-list"></div>
+                        </div>
+
                         <div class="expense-section" style="margin-top:2rem;">
                             <h3 style="margin-bottom:1rem;">Track Expense</h3>
                             <div class="form-row">
@@ -279,10 +306,34 @@
                                     <select id="expense-category"></select>
                                 </div>
                                 <div class="form-group">
+                                    <input type="text" id="expense-note" placeholder="Note (optional) e.g. Advance payment">
+                                </div>
+                                <div class="form-group">
                                     <input type="number" id="expense-amount" placeholder="Amount spent (₹)">
                                 </div>
                                 <div class="form-group" style="display:flex;align-items:flex-end;">
                                     <button type="button" class="btn btn-primary btn-sm" id="add-expense-btn"><i class="fas fa-plus"></i> Add</button>
+                                </div>
+                            </div>
+
+                            <div class="email-settings-section" style="margin-top: 2rem;">
+                                <button class="accordion-trigger" id="expense-history-toggle">
+                                    <span><i class="fas fa-history"></i> Expense History</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div class="accordion-content hidden" id="expense-history-content">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Category</th>
+                                                <th>Amount</th>
+                                                <th>Note</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="expense-history-list"></tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
