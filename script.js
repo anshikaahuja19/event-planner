@@ -210,6 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (view === 'my-events') renderAllEvents();
             if (view === 'vendors') renderGlobalVendors();
             if (view === 'analytics') renderAnalytics();
+            if (view === 'how-it-works') renderHowItWorks();
         });
     });
 
@@ -2140,3 +2141,197 @@ No other text, just the JSON array.`;
     updateDashboard();
     renderNotifications();
 });
+
+const renderHowItWorks = () => {
+    const container = document.getElementById('how-it-works-view');
+    container.innerHTML = `
+    
+    <!-- PAGE HEADER -->
+    <div class="welcome-header">
+        <h1>How IvoryEvents Works</h1>
+        <p>A complete guide to planning your event end-to-end with AI assistance.</p>
+    </div>
+
+    <!-- SECTION 1: THE PROBLEM THIS SOLVES -->
+    <div class="doc-section">
+        <h2>The Problem We Solve</h2>
+        <p>Event planning is a constraint satisfaction problem — you have a fixed 
+        budget, a fixed date, a minimum guest count, and limited vendor availability. 
+        Finding the right combination of resources that satisfies all constraints 
+        simultaneously is complex and time-consuming. IvoryEvents uses AI to solve 
+        this automatically.</p>
+    </div>
+
+    <!-- SECTION 2: THE 5-STEP FLOW -->
+    <div class="doc-section">
+        <h2>The Event Planning Flow</h2>
+        <div class="flow-steps">
+            <div class="flow-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Create Your Event</h3>
+                    <p>Enter your event title, type, date, location, expected guest 
+                    count, and total budget. The system uses these as constraints 
+                    for all AI decisions that follow.</p>
+                    <div class="step-inputs">
+                        <span class="input-tag">Event Type</span>
+                        <span class="input-tag">Date</span>
+                        <span class="input-tag">Location</span>
+                        <span class="input-tag">Budget</span>
+                        <span class="input-tag">Guest Count</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>AI Generates Your Plan</h3>
+                    <p>Our AI engine runs three optimizations simultaneously:</p>
+                    <ul class="doc-list">
+                        <li><strong>Budget Split:</strong> Allocates your total budget 
+                        across categories using event-type percentage templates 
+                        (e.g. weddings allocate 35% to venue, 25% to catering).</li>
+                        <li><strong>Task Timeline:</strong> Distributes 11 planning 
+                        tasks proportionally between today and your event date, 
+                        so each task has a specific deadline.</li>
+                        <li><strong>Vendor Ranking:</strong> Scores all vendors by 
+                        proximity — same city (3pts), same state (2pts), same 
+                        region (1pt) — and surfaces the most local options first.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Track & Execute</h3>
+                    <p>Use the four tabs in each event to manage execution:</p>
+                    <ul class="doc-list">
+                        <li><strong>Timeline:</strong> Check off tasks as completed. 
+                        Use Optimize to sort incomplete tasks to the top.</li>
+                        <li><strong>Budget Split:</strong> Add real expenses per 
+                        category. The system warns you at 80% and alerts at 100%.</li>
+                        <li><strong>Attendees:</strong> Add guests, send real email 
+                        invitations, track RSVP status, send reminders to 
+                        non-responders only.</li>
+                        <li><strong>Vendor Research:</strong> Browse proximity-ranked 
+                        vendors or use AI to get custom suggestions for your 
+                        specific event.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3>Collect Feedback</h3>
+                    <p>After your event date passes, the Feedback tab unlocks. 
+                    Collect star ratings for venue, catering, and organization, 
+                    plus NPS score and written comments. All feedback is stored 
+                    and surfaced in Analytics.</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <h3>Analyze & Improve</h3>
+                    <p>The Analytics view aggregates data across all your events — 
+                    attendance rate, budget utilization per category, vendor 
+                    ratings, and RSVP response rates — so every event makes 
+                    the next one better.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 3: DATA MODEL -->
+    <div class="doc-section">
+        <h2>How Your Data Is Structured</h2>
+        <p>Each event stores the following information:</p>
+        <div class="data-model-grid">
+            <div class="data-card">
+                <h4>Core Details</h4>
+                <p>title, type, date, size, location, budget, createdAt</p>
+            </div>
+            <div class="data-card">
+                <h4>AI-Generated</h4>
+                <p>budgetSplit {}, timeline [], suggestedVendors [], eventLoc {}</p>
+            </div>
+            <div class="data-card">
+                <h4>User-Tracked</h4>
+                <p>expenses {}, attendees [], selectedVendors []</p>
+            </div>
+            <div class="data-card">
+                <h4>Post-Event</h4>
+                <p>feedback { ratings, nps, comments, submittedAt }</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 4: AI LOGIC EXPLAINED -->
+    <div class="doc-section">
+        <h2>The AI Logic Behind the App</h2>
+        <div class="ai-explainer-grid">
+            <div class="ai-card">
+                <div class="ai-card-icon"><i class="fas fa-wallet"></i></div>
+                <h4>Budget Heuristic</h4>
+                <p>Budget is split using event-type percentage templates derived 
+                from Indian event industry averages. A wedding allocates more to 
+                venue and photography; a birthday allocates more to catering and 
+                entertainment.</p>
+            </div>
+            <div class="ai-card">
+                <div class="ai-card-icon"><i class="fas fa-calendar"></i></div>
+                <h4>Timeline Heuristic</h4>
+                <p>Tasks are distributed at fixed percentage points between today 
+                and the event date. "Book Venue" always falls at 15% of the 
+                planning window; "Final Walkthrough" at 92% — regardless of 
+                whether the event is 30 days or 300 days away.</p>
+            </div>
+            <div class="ai-card">
+                <div class="ai-card-icon"><i class="fas fa-map-pin"></i></div>
+                <h4>Proximity Heuristic</h4>
+                <p>Vendors are scored by geographic proximity to the event location. 
+                Same city = 3 points, same state = 2 points, same region = 1 point. 
+                This reduces logistics cost and improves reliability by surfacing 
+                local vendors first.</p>
+            </div>
+            <div class="ai-card">
+                <div class="ai-card-icon"><i class="fas fa-robot"></i></div>
+                <h4>Grok AI Research</h4>
+                <p>The Vendor Research tab connects to the Grok AI API to generate 
+                real, location-specific vendor suggestions tailored to your event 
+                type and budget — going beyond the static vendor database.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 5: TECH STACK -->
+    <div class="doc-section">
+        <h2>Technology Used</h2>
+        <div class="tech-grid">
+            <div class="tech-item">
+                <strong>Frontend</strong>
+                <span>HTML5, CSS3, Vanilla JavaScript</span>
+            </div>
+            <div class="tech-item">
+                <strong>AI Engine</strong>
+                <span>Grok API (xAI) for vendor research</span>
+            </div>
+            <div class="tech-item">
+                <strong>Email Delivery</strong>
+                <span>EmailJS for browser-based email sending</span>
+            </div>
+            <div class="tech-item">
+                <strong>Data Storage</strong>
+                <span>localStorage for persistent event data</span>
+            </div>
+            <div class="tech-item">
+                <strong>UI Icons</strong>
+                <span>FontAwesome 6.4</span>
+            </div>
+            <div class="tech-item">
+                <strong>Fonts</strong>
+                <span>Google Fonts — Outfit + Inter</span>
+            </div>
+        </div>
+    </div>\`;
+};
