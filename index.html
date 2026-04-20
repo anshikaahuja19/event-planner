@@ -289,14 +289,40 @@
                     </div>
 
                     <div class="tab-content hidden" id="attendees-tab">
-                        <div class="attendee-actions">
+                        <div class="attendee-actions" style="margin-bottom: 0.5rem; display: flex; flex-wrap: wrap; gap: 8px;">
                             <button class="btn btn-primary btn-sm" id="add-attendee-btn"><i class="fas fa-user-plus"></i> Add Attendee</button>
                             <button class="btn btn-outline btn-sm" id="send-invites-btn"><i class="fas fa-paper-plane"></i> Send Invitations</button>
                             <button class="btn btn-outline btn-sm" id="send-reminders-btn"><i class="fas fa-bell"></i> Send Reminders</button>
+                            <button class="btn btn-outline btn-sm" id="select-all-pending-btn"><i class="fas fa-check-square"></i> Select All Pending</button>
+                            <button class="btn btn-outline btn-sm" id="export-list-btn"><i class="fas fa-download"></i> Export List</button>
                         </div>
+                        <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="auto-followup-toggle">
+                                <label for="auto-followup-toggle">Auto follow-up after 3 days of no response</label>
+                            </div>
+                        </div>
+                        <div class="rsvp-deadline-bar">
+                            <span style="font-weight: 500;">RSVP Deadline:</span>
+                            <input type="date" id="rsvp-deadline-input" style="padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-family: inherit;">
+                            <button class="btn btn-outline btn-sm" id="set-deadline-btn">Set Deadline</button>
+                        </div>
+                        <div id="bulk-actions-container" style="display: none; align-items: center; gap: 10px; margin-bottom: 1rem; background: var(--bg-card); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                            <span style="font-weight: 600; font-size: 0.85rem;"><span id="bulk-select-count">0</span> Selected</span>
+                            <select id="bulk-action-select" style="padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border);">
+                                <option value="">Select action...</option>
+                                <option value="confirm">Mark as Confirmed</option>
+                                <option value="decline">Mark as Declined</option>
+                                <option value="remove">Remove Selected</option>
+                            </select>
+                            <button class="btn btn-primary btn-sm" id="apply-bulk-action-btn">Apply</button>
+                            <button class="btn btn-outline btn-sm" id="cancel-bulk-action-btn">Cancel</button>
+                        </div>
+                        <div id="attendee-alerts-container"></div>
 
                         <div id="rsvp-dashboard" style="margin-bottom: 1.5rem; display: none;">
-                            <div id="rsvp-summary" style="display: flex; gap: 10px; margin-bottom: 10px;"></div>
+                            <div id="rsvp-summary" style="display: flex; gap: 10px; margin-bottom: 8px;"></div>
+                            <div id="rsvp-analytics-row" style="display: flex; gap: 15px; margin-bottom: 10px; font-size: 0.85rem; color: var(--text-muted); font-weight: 500;"></div>
                             <div id="rsvp-progress-container">
                                 <div class="rsvp-bar-track" style="height: 8px; display: flex; overflow: hidden; border-radius: var(--radius-sm); background: #e5e7eb;">
                                     <div id="rsvp-progress-confirmed" style="background: var(--success); width: 0%;"></div>
@@ -309,10 +335,12 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
+                                    <th id="th-bulk" style="width: 40px; display: none;"></th>
                                     <th>Name</th>
                                     <th>Email</th>
                                     <th>Status</th>
                                     <th>Group</th>
+                                    <th>Reminders</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -378,6 +406,50 @@
     <div id="ai-toast" class="ai-toast hidden">
         <div class="ai-sparkle"><i class="fas fa-sun sunflower-spin"></i></div>
         <div class="ai-text">AI is generating your event timeline...</div>
+    </div>
+
+    <div id="add-attendee-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-plus" style="color:var(--primary);"></i> Add Attendee</h2>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="add-attendee-form">
+                <div class="form-group">
+                    <label for="att-name">Name *</label>
+                    <input type="text" id="att-name" required placeholder="Guest Name">
+                </div>
+                <div class="form-group">
+                    <label for="att-email">Email *</label>
+                    <input type="email" id="att-email" required placeholder="guest@example.com">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="att-group">Group</label>
+                        <select id="att-group">
+                            <option value="General">General</option>
+                            <option value="Family">Family</option>
+                            <option value="Friend">Friend</option>
+                            <option value="VVIP">VVIP</option>
+                            <option value="Corporate">Corporate</option>
+                            <option value="Media">Media</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="att-phone">Phone (Optional)</label>
+                        <input type="tel" id="att-phone" placeholder="+1 234 567 8900">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="att-note">Note (Optional)</label>
+                    <input type="text" id="att-note" placeholder="Dietary restrictions, +1s, etc.">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary close-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Attendee</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>

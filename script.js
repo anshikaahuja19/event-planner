@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize EmailJS
+    
     if (typeof emailjs !== 'undefined') {
         emailjs.init(ENV.EMAILJS_PUBLIC_KEY);
     }
@@ -391,6 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectedVendors: [],
                 suggestedVendors: aiResult.suggestedVendors,
                 eventLoc: aiResult.eventLoc,
+                autoFollowUp: true,
                 createdAt: new Date().toISOString()
             };
 
@@ -602,18 +603,98 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast(`₹${amt.toLocaleString()} expense added to ${cat}.`);
     });
 
+    const checkFollowUps = (event) => {
+        if (!event.attendees) return 0;
+        let flagged = 0;
+        const now = new Date();
+        event.attendees.forEach(a => {
+            if (a.status === 'Invited' && event.autoFollowUp !== false && !a.followUpSent) {
+                const addedStr = a.addedAt || event.createdAt || now.toISOString();
+                const addedDate = new Date(addedStr);
+                const daysSince = Math.floor((now - addedDate) / (1000 * 3600 * 24));
+                if (daysSince >= 3) {
+                    a.followUpSent = true;
+                    a.followUpDate = now.toISOString();
+                    a.reminderCount = (a.reminderCount || 0) + 1;
+                    flagged++;
+                    addNotif(`Auto follow-up triggered for ${a.name} — no response in 3 days for "${event.title}"`);
+                }
+            }
+        });
+        if (flagged > 0) persist();
+        return flagged;
+    };
+
     const renderAttendees = (event) => {
         const tbody = $('#attendee-list');
         const rsvpDashboard = $('#rsvp-dashboard');
+        const alertsContainer = $('#attendee-alerts-container');
+        if (alertsContainer) alertsContainer.innerHTML = '';
 
         if (!event.attendees || event.attendees.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;">No attendees added yet.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;">No attendees added yet.</td></tr>`;
             if (rsvpDashboard) rsvpDashboard.style.display = 'none';
             $('#email-status').style.display = 'none';
             return;
         }
 
-        // Render Email Status
+        const flaggedCount = checkFollowUps(event);
+        if (flaggedCount > 0 && alertsContainer) {
+            alertsContainer.innerHTML += `
+                <div class="rsvp-info-banner" id="followup-banner">
+                    <div><i class="fas fa-exclamation-circle"></i> ${flaggedCount} guests have been auto-flagged for follow-up. Click Send Reminders to reach them.</div>
+                    <button class="btn btn-sm" style="background:transparent;border:none;color:inherit;" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+                </div>
+            `;
+        }
+
+        const autoToggle = $('#auto-followup-toggle');
+        if (autoToggle) {
+            autoToggle.checked = event.autoFollowUp !== false;
+            autoToggle.onchange = (e) => {
+                event.autoFollowUp = e.target.checked;
+                persist();
+            };
+        }
+
+        const rsvpInput = $('#rsvp-deadline-input');
+        if (rsvpInput) {
+            rsvpInput.value = event.rsvpDeadline || '';
+            $('#set-deadline-btn').onclick = () => {
+                if (rsvpInput.value) {
+                    event.rsvpDeadline = rsvpInput.value;
+                    persist();
+                    renderAttendees(event);
+                    showToast("RSVP Deadline updated.");
+                }
+            };
+        }
+
+        if (event.rsvpDeadline && alertsContainer) {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const deadline = new Date(event.rsvpDeadline);
+            const diffDays = Math.floor((deadline - today) / (1000 * 3600 * 24));
+            
+            const pendingCount = event.attendees.filter(a => a.status === 'Pending' || a.status === 'Invited').length;
+            if (pendingCount > 0) {
+                if (diffDays < 0) {
+                    alertsContainer.innerHTML += `
+                        <div class="rsvp-info-banner" style="background:#fee2e2; border-color:#f87171; color:#991b1b;">
+                            <div><i class="fas fa-exclamation-triangle"></i> ⚠ RSVP deadline has passed. ${pendingCount} guests have not responded.</div>
+                        </div>
+                    `;
+                } else if (diffDays <= 2) {
+                    alertsContainer.innerHTML += `
+                        <div class="rsvp-info-banner">
+                            <div><i class="fas fa-clock"></i> RSVP deadline is in ${diffDays} days. Send reminders now.</div>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        
         const statusEl = $('#email-status');
         if (event.lastEmailAction) {
             const { type, count, date } = event.lastEmailAction;
@@ -624,17 +705,17 @@ document.addEventListener('DOMContentLoaded', () => {
             statusEl.style.display = 'none';
         }
 
-        // Render Email Settings
+        
         $('#reply-to-email').value = state.emailSettings.replyTo || '';
         $('#copy-me-checkbox').checked = state.emailSettings.copyMe || false;
 
-        // Settings Listeners (remove old ones if any)
+        
         const replyInput = $('#reply-to-email');
         const copyCheck = $('#copy-me-checkbox');
         const settingsToggle = $('#email-settings-toggle');
         const settingsContent = $('#email-settings-content');
 
-        // Toggle Expand
+        
         settingsToggle.onclick = () => {
             settingsToggle.classList.toggle('active');
             settingsContent.classList.toggle('hidden');
@@ -669,35 +750,65 @@ document.addEventListener('DOMContentLoaded', () => {
             const pctDecl = total > 0 ? (declined / total) * 100 : 0;
             const respondedPct = total > 0 ? Math.round(((confirmed + declined) / total) * 100) : 0;
 
+            let totalResponseDays = 0;
+            let respondedCount = 0;
+            event.attendees.forEach(a => {
+                if ((a.status === 'Confirmed' || a.status === 'Declined') && a.respondedAt && a.addedAt) {
+                    const diff = (new Date(a.respondedAt) - new Date(a.addedAt)) / (1000 * 3600 * 24);
+                    if (diff >= 0) {
+                        totalResponseDays += diff;
+                        respondedCount++;
+                    }
+                }
+            });
+            const avgResponseTime = respondedCount > 0 ? (totalResponseDays / respondedCount).toFixed(1) + ' days' : 'No responses yet';
+
+            $('#rsvp-analytics-row').innerHTML = `
+                <span>Response rate: <strong>${respondedPct}%</strong></span>
+                <span>Avg response time: <strong>${avgResponseTime}</strong></span>
+            `;
+
             $('#rsvp-progress-confirmed').style.width = `${pctConf}%`;
             $('#rsvp-progress-declined').style.width = `${pctDecl}%`;
             $('#rsvp-progress-label').innerText = `${respondedPct}% responded`;
         }
 
-        tbody.innerHTML = event.attendees.map((a, idx) => `
-            <tr>
-                <td>${a.name}</td>
-                <td>${a.email}</td>
-                <td><span class="status-tag ${a.status.toLowerCase()}">${a.status}</span></td>
-                <td>${a.group || 'General'}</td>
-                <td style="display:flex;gap:6px;align-items:center;">
-                    ${a.status !== 'Confirmed' ? `<button class="btn btn-sm btn-success confirm-btn" data-idx="${idx}">✓ Confirm</button>` : ''}
-                    ${a.status !== 'Declined'  ? `<button class="btn btn-sm btn-danger decline-btn" data-idx="${idx}">✗ Decline</button>` : ''}
-                    <button class="delete-attendee-btn" data-idx="${idx}"><i class="fas fa-trash"></i></button>
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = event.attendees.map((a, idx) => {
+            const followBadge = a.followUpSent ? `<span class="followup-badge">Follow-up sent</span>` : '';
+            const remCount = a.reminderCount || 0;
+            const remDisplay = remCount === 0 ? "—" : (remCount >= 3 ? `<span style="color:var(--danger);font-weight:bold;">${remCount}</span>` : remCount);
+            
+            return `
+                <tr>
+                    <td class="bulk-cb-cell" style="display:none;"><input type="checkbox" class="eval-bulk-cb" data-idx="${idx}"></td>
+                    <td>${a.name}</td>
+                    <td>${a.email}</td>
+                    <td><span class="status-tag ${a.status.toLowerCase()}">${a.status}</span> ${followBadge}</td>
+                    <td>${a.group || 'General'}</td>
+                    <td>${remDisplay}</td>
+                    <td style="display:flex;gap:6px;align-items:center;">
+                        ${a.status !== 'Confirmed' ? `<button class="btn btn-sm btn-success confirm-btn" data-idx="${idx}">✓ Confirm</button>` : ''}
+                        ${a.status !== 'Declined'  ? `<button class="btn btn-sm btn-danger decline-btn" data-idx="${idx}">✗ Decline</button>` : ''}
+                        <button class="delete-attendee-btn" data-idx="${idx}"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
 
         tbody.querySelectorAll('.confirm-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                event.attendees[parseInt(btn.dataset.idx)].status = 'Confirmed';
+                const a = event.attendees[parseInt(btn.dataset.idx)];
+                a.status = 'Confirmed';
+                a.respondedAt = new Date().toISOString();
                 persist(); renderAttendees(event);
             });
         });
 
         tbody.querySelectorAll('.decline-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                event.attendees[parseInt(btn.dataset.idx)].status = 'Declined';
+                const a = event.attendees[parseInt(btn.dataset.idx)];
+                a.status = 'Declined';
+                a.respondedAt = new Date().toISOString();
                 persist(); renderAttendees(event);
             });
         });
@@ -712,19 +823,138 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    
+    const attendeeModal = $('#add-attendee-modal');
     $('#add-attendee-btn').addEventListener('click', () => {
         const event = state.events.find(e => e.id === state.selectedEventId);
         if (!event) return;
-        const name = prompt('Attendee name:');
-        if (!name) return;
-        const email = prompt('Attendee email:');
-        if (!email) return;
-        const group = prompt('Group (e.g. VVIP, Family, Regular):', 'General') || 'General';
+        $('#add-attendee-form').reset();
+        attendeeModal.classList.add('active');
+    });
 
-        event.attendees.push({ name, email, status: 'Pending', group });
+    if ($('#add-attendee-form')) {
+        $('#add-attendee-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const event = state.events.find(ev => ev.id === state.selectedEventId);
+            if (!event) return;
+            
+            const name = $('#att-name').value.trim();
+            const email = $('#att-email').value.trim();
+            const group = $('#att-group').value;
+            const phone = $('#att-phone').value.trim();
+            const note = $('#att-note').value.trim();
+            
+            event.attendees.push({
+                name, email, group,
+                status: 'Pending',
+                phone: phone || null,
+                note: note || null,
+                addedAt: new Date().toISOString(),
+                followUpSent: false,
+                reminderCount: 0,
+                followUpDate: null
+            });
+            persist();
+            renderAttendees(event);
+            addNotif(`${name} added to "${event.title}".`);
+            attendeeModal.classList.remove('active');
+        });
+    }
+
+    if (attendeeModal) {
+        attendeeModal.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', () => attendeeModal.classList.remove('active'));
+        });
+    }
+
+    
+    $('#select-all-pending-btn').addEventListener('click', () => {
+        const event = state.events.find(e => e.id === state.selectedEventId);
+        if (!event || !event.attendees.length) return;
+        
+        $('#th-bulk').style.display = 'table-cell';
+        $('#bulk-actions-container').style.display = 'flex';
+        
+        document.querySelectorAll('.bulk-cb-cell').forEach(td => td.style.display = 'table-cell');
+        
+        let checkedCount = 0;
+        document.querySelectorAll('.eval-bulk-cb').forEach((cb) => {
+            const idx = parseInt(cb.dataset.idx);
+            const status = event.attendees[idx].status;
+            if (status === 'Pending' || status === 'Invited') {
+                cb.checked = true;
+                checkedCount++;
+            } else {
+                cb.checked = false;
+            }
+        });
+        $('#bulk-select-count').innerText = checkedCount;
+
+        document.querySelectorAll('.eval-bulk-cb').forEach(cb => {
+            cb.onchange = () => {
+                const checked = document.querySelectorAll('.eval-bulk-cb:checked').length;
+                $('#bulk-select-count').innerText = checked;
+            };
+        });
+    });
+
+    $('#cancel-bulk-action-btn').addEventListener('click', () => {
+        $('#th-bulk').style.display = 'none';
+        $('#bulk-actions-container').style.display = 'none';
+        document.querySelectorAll('.bulk-cb-cell').forEach(td => td.style.display = 'none');
+        document.querySelectorAll('.eval-bulk-cb').forEach(cb => cb.checked = false);
+    });
+
+    $('#apply-bulk-action-btn').addEventListener('click', () => {
+        const event = state.events.find(e => e.id === state.selectedEventId);
+        if (!event) return;
+        
+        const action = $('#bulk-action-select').value;
+        if (!action) { alert('Please select an action.'); return; }
+        
+        const checkboxes = Array.from(document.querySelectorAll('.eval-bulk-cb:checked'));
+        if (checkboxes.length === 0) return;
+        
+        const indices = checkboxes.map(cb => parseInt(cb.dataset.idx)).sort((a,b)=>b-a);
+        const now = new Date().toISOString();
+        
+        if (action === 'confirm' || action === 'decline') {
+            const stat = action === 'confirm' ? 'Confirmed' : 'Declined';
+            indices.forEach(idx => {
+                event.attendees[idx].status = stat;
+                event.attendees[idx].respondedAt = now;
+            });
+            showToast(`Marked ${indices.length} attendees as ${stat}.`);
+        } else if (action === 'remove') {
+            indices.forEach(idx => {
+                event.attendees.splice(idx, 1);
+            });
+            showToast(`Removed ${indices.length} attendees.`);
+        }
+        
         persist();
         renderAttendees(event);
-        addNotif(`${name} added to "${event.title}".`);
+        $('#cancel-bulk-action-btn').click();
+    });
+
+    
+    $('#export-list-btn').addEventListener('click', () => {
+        const event = state.events.find(e => e.id === state.selectedEventId);
+        if (!event || !event.attendees.length) { alert('No attendees to export.'); return; }
+        
+        const header = "Name,Email,Status,Group,Reminders,Added Date\n";
+        const rows = event.attendees.map(a => {
+            return `"${a.name}","${a.email}","${a.status}","${a.group || 'General'}","${a.reminderCount||0}","${a.addedAt || event.createdAt}"`;
+        }).join("\n");
+        
+        const csvContent = header + rows;
+        const blob = new Blob([csvContent], {type: 'text/csv'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${event.title.replace(/\s+/g,'_')}_attendees.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
     });
 
     $('#send-invites-btn').addEventListener('click', async () => {
@@ -742,7 +972,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Update status first
+        
         pendingAttendees.forEach(a => a.status = 'Invited');
         persist();
         renderAttendees(event);
@@ -789,7 +1019,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 date: new Date().toISOString()
             };
             persist();
-            renderAttendees(event); // Re-render for status div
+            renderAttendees(event); 
 
             if (failed === 0) {
                 showToast(`Invitations sent to ${successful} guests!`, 3000);
