@@ -318,6 +318,25 @@
                             </thead>
                             <tbody id="attendee-list"></tbody>
                         </table>
+
+                        <div id="email-status" class="email-status"></div>
+
+                        <div class="email-settings-section">
+                            <button class="accordion-trigger" id="email-settings-toggle">
+                                <span><i class="fas fa-cog"></i> Email Settings</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="accordion-content hidden" id="email-settings-content">
+                                <div class="form-group">
+                                    <label for="reply-to-email">Reply-to Email</label>
+                                    <input type="email" id="reply-to-email" placeholder="e.g. planner@example.com">
+                                </div>
+                                <div class="checkbox-wrapper">
+                                    <input type="checkbox" id="copy-me-checkbox">
+                                    <label for="copy-me-checkbox">Send me a copy of all emails</label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="event-vendors-tab" class="tab-content hidden">
@@ -361,6 +380,8 @@
         <div class="ai-text">AI is generating your event timeline...</div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script src="config.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

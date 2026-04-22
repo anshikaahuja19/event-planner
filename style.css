@@ -1295,3 +1295,67 @@ body {
     .form-row { grid-template-columns: 1fr; }
     .stats-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* EmailJS Integration Styles */
+.email-status {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 1.5rem 0;
+    padding: 0.75rem;
+    background: var(--primary-light);
+    border-radius: var(--radius-sm);
+    border-left: 4px solid var(--honey);
+    display: none;
+}
+
+.email-settings-section {
+    margin-top: 2rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.accordion-trigger {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    background: var(--bg-card);
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    color: var(--text-main);
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+}
+
+.accordion-trigger:hover {
+    background: var(--primary-light);
+}
+
+.accordion-trigger i.fa-chevron-down {
+    transition: transform 0.3s ease;
+}
+
+.accordion-trigger.active i.fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+.accordion-content {
+    padding: 1.5rem;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+}
+
+.accordion-content.hidden {
+    display: none;
+}
+
+.email-settings-section .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.email-settings-section .checkbox-wrapper {
+    margin-top: 1rem;
+}

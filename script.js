@@ -1,4 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize EmailJS
+    if (typeof emailjs !== 'undefined') {
+        emailjs.init(ENV.EMAILJS_PUBLIC_KEY);
+    }
+
 
     let state = {
         events: JSON.parse(localStorage.getItem('ep_events')) || [],
@@ -6,12 +11,18 @@ document.addEventListener('DOMContentLoaded', () => {
         currentView: 'dashboard',
         isDarkMode: false,
         notifications: JSON.parse(localStorage.getItem('ep_notifs')) || [],
-        vendorFilter: 'All'
+        vendorFilter: 'All',
+        emailSettings: {
+            replyTo: localStorage.getItem('ep_reply_email') || '',
+            copyMe: localStorage.getItem('ep_copy_me') === 'true'
+        }
     };
 
     const persist = () => {
         localStorage.setItem('ep_events', JSON.stringify(state.events));
         localStorage.setItem('ep_notifs', JSON.stringify(state.notifications));
+        localStorage.setItem('ep_reply_email', state.emailSettings.replyTo);
+        localStorage.setItem('ep_copy_me', state.emailSettings.copyMe);
     };
 
     const VENDOR_DATABASE = [
@@ -598,8 +609,46 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!event.attendees || event.attendees.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;">No attendees added yet.</td></tr>`;
             if (rsvpDashboard) rsvpDashboard.style.display = 'none';
+            $('#email-status').style.display = 'none';
             return;
         }
+
+        // Render Email Status
+        const statusEl = $('#email-status');
+        if (event.lastEmailAction) {
+            const { type, count, date } = event.lastEmailAction;
+            const actionDate = new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            statusEl.innerHTML = `<i class="fas fa-info-circle"></i> Last action: ${type} sent to ${count} guest${count !== 1 ? 's' : ''} on ${actionDate}`;
+            statusEl.style.display = 'block';
+        } else {
+            statusEl.style.display = 'none';
+        }
+
+        // Render Email Settings
+        $('#reply-to-email').value = state.emailSettings.replyTo || '';
+        $('#copy-me-checkbox').checked = state.emailSettings.copyMe || false;
+
+        // Settings Listeners (remove old ones if any)
+        const replyInput = $('#reply-to-email');
+        const copyCheck = $('#copy-me-checkbox');
+        const settingsToggle = $('#email-settings-toggle');
+        const settingsContent = $('#email-settings-content');
+
+        // Toggle Expand
+        settingsToggle.onclick = () => {
+            settingsToggle.classList.toggle('active');
+            settingsContent.classList.toggle('hidden');
+        };
+
+        replyInput.onchange = (e) => {
+            state.emailSettings.replyTo = e.target.value;
+            persist();
+        };
+
+        copyCheck.onchange = (e) => {
+            state.emailSettings.copyMe = e.target.checked;
+            persist();
+        };
 
         const total = event.attendees.length;
         const confirmed = event.attendees.filter(a => a.status === 'Confirmed').length;
@@ -678,22 +727,92 @@ document.addEventListener('DOMContentLoaded', () => {
         addNotif(`${name} added to "${event.title}".`);
     });
 
-    $('#send-invites-btn').addEventListener('click', () => {
+    $('#send-invites-btn').addEventListener('click', async () => {
         const event = state.events.find(e => e.id === state.selectedEventId);
         if (!event || !event.attendees.length) { alert('No attendees to invite.'); return; }
 
-        showToast('Sending invitations...');
-        setTimeout(() => {
-            event.attendees.forEach(a => { if (a.status === 'Pending') a.status = 'Invited'; });
+        if (typeof emailjs === 'undefined') {
+            showToast("Email service unavailable. Check your internet connection.", 3000);
+            return;
+        }
+
+        const pendingAttendees = event.attendees.filter(a => a.status === 'Pending');
+        if (pendingAttendees.length === 0) {
+            showToast("No pending invitations to send.", 2000);
+            return;
+        }
+
+        // Update status first
+        pendingAttendees.forEach(a => a.status = 'Invited');
+        persist();
+        renderAttendees(event);
+
+        showToast(`Sending invitations to ${pendingAttendees.length} guests...`, 0);
+
+        const emailPromises = pendingAttendees.map(attendee => {
+            const params = {
+                to_email: attendee.email,
+                to_name: attendee.name,
+                event_name: event.title,
+                event_date: formatDate(event.date),
+                event_location: event.location,
+                event_type: event.type,
+                guest_count: event.size,
+                reply_to: state.emailSettings.replyTo || '',
+                bcc_to: state.emailSettings.copyMe ? (state.emailSettings.replyTo || '') : ''
+            };
+
+            return emailjs.send(ENV.EMAILJS_SERVICE_ID, ENV.EMAILJS_TEMPLATE_ID, params, {
+                publicKey: ENV.EMAILJS_PUBLIC_KEY
+            })
+                .then(() => {
+                    return { success: true };
+                })
+                .catch(err => {
+                    console.error("EmailJS Error:", err);
+                    alert("EmailJS API Error: " + (err.text || err.message || JSON.stringify(err)));
+                    return { success: false, error: err };
+                });
+        });
+
+        try {
+            const results = await Promise.allSettled(emailPromises);
+            const successful = results.filter(r => r.value && r.value.success).length;
+            const failed = pendingAttendees.length - successful;
+
             persist();
             renderAttendees(event);
-            addNotif(`Invitations sent to ${event.attendees.length} guests for "${event.title}".`);
-        }, 1500);
+
+            event.lastEmailAction = {
+                type: 'Invitations',
+                count: successful,
+                date: new Date().toISOString()
+            };
+            persist();
+            renderAttendees(event); // Re-render for status div
+
+            if (failed === 0) {
+                showToast(`Invitations sent to ${successful} guests!`, 3000);
+            } else {
+                showToast(`${successful} invitations sent, ${failed} failed. Check email addresses.`, 3000);
+            }
+
+            addNotif(`Invitations sent to ${successful} guests for "${event.title}".`);
+        } catch (err) {
+            showToast("An error occurred while sending emails.", 3000);
+        } finally {
+             aiToast.classList.add('hidden');
+        }
     });
 
-    $('#send-reminders-btn').addEventListener('click', () => {
+    $('#send-reminders-btn').addEventListener('click', async () => {
         const event = state.events.find(e => e.id === state.selectedEventId);
         if (!event || !event.attendees.length) { alert('No attendees to remind.'); return; }
+
+        if (typeof emailjs === 'undefined') {
+            showToast("Email service unavailable. Check your internet connection.", 3000);
+            return;
+        }
 
         const total = event.attendees.length;
         const responded = event.attendees.filter(a => a.status === 'Confirmed' || a.status === 'Declined').length;
@@ -703,13 +822,66 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const invited = event.attendees.filter(a => a.status === 'Invited').length;
+        const invitedAttendees = event.attendees.filter(a => a.status === 'Invited');
+        if (invitedAttendees.length === 0) {
+            showToast("No guests to remind. Send invitations first.", 2500);
+            return;
+        }
 
-        showToast('Sending reminders...');
-        setTimeout(() => {
-            showToast(`Reminders sent to ${invited} guests who haven't responded yet`, 3000);
-            addNotif(`Reminders sent to ${invited} invited guests for "${event.title}".`);
-        }, 1500);
+        showToast(`Sending reminders to ${invitedAttendees.length} guests...`, 0);
+
+        const today = new Date();
+        const eventDate = new Date(event.date);
+        const daysUntil = Math.max(0, Math.ceil((eventDate - today) / (1000 * 60 * 60 * 24)));
+
+        const emailPromises = invitedAttendees.map(attendee => {
+            const params = {
+                to_email: attendee.email,
+                to_name: attendee.name,
+                event_name: event.title,
+                event_date: formatDate(event.date),
+                event_location: event.location,
+                days_until: daysUntil,
+                reply_to: state.emailSettings.replyTo || '',
+                bcc_to: state.emailSettings.copyMe ? (state.emailSettings.replyTo || '') : ''
+            };
+
+            return emailjs.send(ENV.EMAILJS_SERVICE_ID, ENV.EMAILJS_REMINDER_TEMPLATE_ID, params, {
+                publicKey: ENV.EMAILJS_PUBLIC_KEY
+            })
+                .then(() => ({ success: true }))
+                .catch(err => {
+                    console.error("EmailJS Error:", err);
+                    alert("EmailJS API Error: " + (err.text || err.message || JSON.stringify(err)));
+                    return { success: false, error: err };
+                });
+        });
+
+        try {
+            const results = await Promise.allSettled(emailPromises);
+            const successful = results.filter(r => r.value && r.value.success).length;
+            const failed = invitedAttendees.length - successful;
+
+            event.lastEmailAction = {
+                type: 'Reminders',
+                count: successful,
+                date: new Date().toISOString()
+            };
+            persist();
+            renderAttendees(event);
+
+            if (failed === 0) {
+                showToast(`Reminders sent to ${successful} guests!`, 3000);
+            } else {
+                showToast(`${successful} reminders sent, ${failed} failed.`, 3000);
+            }
+
+            addNotif(`Reminders sent to ${successful} guests for "${event.title}".`);
+        } catch (err) {
+            showToast("An error occurred while sending reminders.", 3000);
+        } finally {
+            aiToast.classList.add('hidden');
+        }
     });
 
     const renderDetailVendors = (event, filter = 'All') => {
