@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     
-    if (typeof emailjs !== 'undefined') {
+    if (typeof emailjs !== 'undefined' && typeof ENV !== 'undefined') {
         emailjs.init(ENV.EMAILJS_PUBLIC_KEY);
     }
 
@@ -455,7 +455,6 @@ document.addEventListener('DOMContentLoaded', () => {
         $('#detail-location').innerHTML = `<i class="fas fa-map-marker-alt"></i> ${event.location}`;
         $('#detail-size').innerHTML = `<i class="fas fa-users"></i> ${event.size} Guests`;
         $('#detail-budget-label').innerHTML = `<i class="fas fa-wallet"></i> ₹${parseInt(event.budget).toLocaleString()}`;
-        $('#budget-total-val').innerText = `₹${parseInt(event.budget).toLocaleString()}`;
 
         renderTimeline(event);
         renderBudget(event);
@@ -1241,6 +1240,9 @@ No other text, just the JSON array.`;
                 bcc_to: state.emailSettings.copyMe ? (state.emailSettings.replyTo || '') : ''
             };
 
+            if (typeof ENV === 'undefined') {
+                return Promise.resolve({ success: false, error: 'ENV not defined' });
+            }
             return emailjs.send(ENV.EMAILJS_SERVICE_ID, ENV.EMAILJS_TEMPLATE_ID, params, {
                 publicKey: ENV.EMAILJS_PUBLIC_KEY
             })
@@ -1325,6 +1327,9 @@ No other text, just the JSON array.`;
                 bcc_to: state.emailSettings.copyMe ? (state.emailSettings.replyTo || '') : ''
             };
 
+            if (typeof ENV === 'undefined') {
+                return Promise.resolve({ success: false, error: 'ENV not defined' });
+            }
             return emailjs.send(ENV.EMAILJS_SERVICE_ID, ENV.EMAILJS_REMINDER_TEMPLATE_ID, params, {
                 publicKey: ENV.EMAILJS_PUBLIC_KEY
             })
@@ -2333,5 +2338,5 @@ const renderHowItWorks = () => {
                 <span>Google Fonts — Outfit + Inter</span>
             </div>
         </div>
-    </div>\`;
+    </div>`;
 };
